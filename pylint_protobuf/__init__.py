@@ -15,28 +15,29 @@ messages = {
 }
 
 
+def _extract_fields(node):
+    return ['name', 'id', 'email']  # TODO
+
+
 class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
     msgs = messages
     name = 'protobuf-descriptor-checker'
-    _known_classes = {  # TODO
-        'Person': ['name', 'id', 'email'],
-    }
 
     def __init__(self, linter):
         self.linter = linter
         self._seen_imports = None
-        #self._known_classes = None
+        self._known_classes = None
         self._known_variables = None
 
     def visit_module(self, node):
         self._seen_imports = []
-        #self._known_classes = {}
+        self._known_classes = {}
         self._known_variables = {}
 
     def leave_module(self, node):
         self._seen_imports = []
-        #self._known_classes = {}
+        self._known_classes = {}
         self._known_variables = {}
 
     def visit_import(self, node):
@@ -44,10 +45,32 @@ class ProtobufDescriptorChecker(BaseChecker):
         for name, alias in node.names:
             if name.endswith('_pb2'):
                 self._seen_imports.append(alias)
+                self._load_known_classes(node, name)
 
     def visit_importfrom(self, node):
         if node.modname.endswith('_pb2'):
             self._seen_imports.append(node.modname)  # TODO
+            self._load_known_classes(node, node.modname)
+
+    def visit_call(self, node):
+        if not isinstance(node, astroid.Call):
+            return  # NOTE: potentially from visit_attribute
+        assignment = node.parent
+        if not isinstance(assignment, astroid.Assign):
+            return
+        if len(assignment.targets) > 1:
+            # not going to bother with this case
+            return
+        target = assignment.targets[0]
+        if not isinstance(target, astroid.AssignName):
+            return
+        func = node.func
+        if isinstance(func, astroid.Attribute):
+            name = func.attrname
+        else:
+            name = func.name
+        if name in self._known_classes:
+            self._known_variables[target.name] = name
 
     def visit_assignattr(self, node):
         self.visit_attribute(node)
@@ -63,26 +86,44 @@ class ProtobufDescriptorChecker(BaseChecker):
         attr = node
         if obj.name in self._seen_imports:
             if attr.attrname in self._known_classes:
-                # look up assignment and add to names to check
-                call = attr.parent
-                if not isinstance(call, astroid.Call):
-                    return
-                assignment = call.parent
-                if not isinstance(assignment, astroid.Assign):
-                    return
-                if len(assignment.targets) > 1:
-                    # not going to bother with this case
-                    return
-                target = assignment.targets[0]
-                if not isinstance(target, astroid.AssignName):
-                    return
-                self._known_variables[target.name] = attr.attrname
+                self.visit_call(attr.parent)
         elif obj.name in self._known_variables:
             cls_name = self._known_variables[obj.name]
             cls_fields = self._known_classes[cls_name]
             if attr.attrname not in cls_fields:
                 self.add_message('protobuf-undefined-attribute',
                                  args=(attr.attrname, cls_name), node=attr)
+
+    def _load_known_classes(self, importnode, modname):
+        try:
+            mod = importnode.do_import_module(modname)
+        except astroid.TooManyLevelsError as ex:
+            raise  # TODO
+        except astroid.AstroidBuildingException as ex:
+            raise  # TODO
+        else:
+            imported_names = None  # ignore aliases of modules
+            if isinstance(importnode, astroid.ImportFrom):
+                imported_names = importnode.names
+            self._walk_protobuf_generated_module(mod, imported_names)
+
+    # type: imported_names: Optional[List[Tuple[str, Optional[str]]]]
+    def _walk_protobuf_generated_module(self, mod, imported_names):
+        def likely_name(n):
+            if imported_names is not None:
+                # NOTE: only map aliases when mapping names to fields, not when
+                # checking mod.globals (since they haven't been renamed yet).
+                return any(n == name for name, _ in imported_names)
+            return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR')
+        aliases = {
+            name: alias
+            for name, alias in (imported_names or [])
+            if alias is not None
+        }
+        for original_name, node in mod.globals.items():
+            if likely_name(original_name):
+                imported_name = aliases.get(original_name, original_name)
+                self._known_classes[imported_name] = _extract_fields(node)
 
 
 # just need to fill out typecheck.py / generated-members it looks like?
