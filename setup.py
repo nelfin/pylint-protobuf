@@ -9,6 +9,16 @@ setup(
     author='Andrew Haigh',
     author_email='hello@nelf.in',
     license='MIT',
-    keywords='pylint plugin protobuf',
+    keywords=['pylint', 'plugin', 'protobuf'],
+    classifiers=[
+        'Development Status :: 2 - Pre-Alpha',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Topic :: Software Development :: Quality Assurance',
+    ],
     packages=find_packages(),
+    install_requires=[
+        'astroid',
+        'pylint',
+    ],
 )
