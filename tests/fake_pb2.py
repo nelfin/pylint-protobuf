@@ -8,15 +8,15 @@ class _Descriptor(object):
         self.name = name
         self.fields = fields
 
+_FOO = _Descriptor(
+    name='Foo',
+    fields=[_FieldDescriptor(name='valid_field')],
+)
 
-Foo = type('Foo', (object, ), {
-    'DESCRIPTOR': _Descriptor(
-        name='Foo',
-        fields=[_FieldDescriptor(name='valid_field')],
-    )})
+_BAR = _Descriptor(
+    name='Bar',
+    fields=[_FieldDescriptor(name='valid_field')],
+)
 
-Bar = type('Bar', (object, ), {
-    'DESCRIPTOR': _Descriptor(
-        name='Bar',
-        fields=[_FieldDescriptor(name='valid_field')],
-    )})
+Foo = type('Foo', (object, ), {'DESCRIPTOR': _FOO})
+Bar = type('Bar', (object, ), {'DESCRIPTOR': _BAR})

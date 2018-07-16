@@ -15,8 +15,79 @@ messages = {
 }
 
 
-def _extract_fields(node):
-    return ['name', 'id', 'email']  # TODO
+def _parse_fields(iterable):
+    """
+    Lift field names from keyword arguments to descriptor_pb2.FieldDescriptor.
+
+    >>> _parse_fields([FieldDescriptor(name='a'), FieldDescriptor(name='b')])
+    ['a', 'b']
+    """
+    fields = []
+    for call in iterable:
+        if not isinstance(call, astroid.Call):
+            return None
+        for kw in call.keywords:
+            if kw.arg == 'name':
+                value = getattr(kw.value, 'value', None)
+                if value is not None:
+                    fields.append(value)
+    return fields
+
+
+def _parse_descriptor(node):
+    """
+    Walk the nodes of a descriptor_pb2.Descriptor to find the fields keyword.
+    """
+    if node is None:
+        return None
+    node = node[0]
+    assignment = node.parent
+    if not isinstance(assignment, astroid.Assign):
+        return None
+    call = assignment.value
+    if not isinstance(call, astroid.Call):
+        return None
+    for kw in call.keywords:
+        if kw.arg == 'fields':
+            return _parse_fields(kw.value.itered())
+    return None
+
+
+def _extract_fields(node, module_globals={}):
+    """
+    Given a "name = type(...)"-style assignment, look up the variable
+    corresponding to the protobuf-generated descriptor in the module and parse
+    out the names of its fields.
+
+    ```
+    Person = _reflection.GeneratedProtocolMessageType(
+        'Person', (_message.Message,), dict(
+            DESCRIPTOR = _PERSON,  # parse AST of _PERSON for field names
+            __module__ = 'person_pb2'
+        )
+    )
+    ```
+    """
+    def parse_name(var):
+        if not isinstance(var, astroid.Name):
+            return None
+        return _parse_descriptor(module_globals.get(var.name))
+    if not isinstance(node, astroid.AssignName):
+        return None
+    call = node.parent.value
+    if not isinstance(call, astroid.Call) or len(call.args) < 3:
+        return None
+    type_dict = call.args[2]
+    if isinstance(type_dict, astroid.Call):
+        for kw in type_dict.keywords:
+            if kw.arg == 'DESCRIPTOR':
+                var = kw.value
+                return parse_name(var)
+    elif isinstance(type_dict, astroid.Dict):
+        for key, var in type_dict.items:
+            if getattr(key, 'value', None) == 'DESCRIPTOR':
+                return parse_name(var)
+    return None
 
 
 class ProtobufDescriptorChecker(BaseChecker):
@@ -97,10 +168,10 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _load_known_classes(self, importnode, modname):
         try:
             mod = importnode.do_import_module(modname)
-        except astroid.TooManyLevelsError as ex:
-            raise  # TODO
+        except astroid.TooManyLevelsError:
+            pass
         except astroid.AstroidBuildingException as ex:
-            raise  # TODO
+            pass  # TODO: warn about not being able to import?
         else:
             imported_names = None  # ignore aliases of modules
             if isinstance(importnode, astroid.ImportFrom):
@@ -123,25 +194,10 @@ class ProtobufDescriptorChecker(BaseChecker):
         for original_name, node in mod.globals.items():
             if likely_name(original_name):
                 imported_name = aliases.get(original_name, original_name)
-                self._known_classes[imported_name] = _extract_fields(node)
+                fields = _extract_fields(node[0], mod.globals)
+                if fields is not None:
+                    self._known_classes[imported_name] = fields
 
-
-# just need to fill out typecheck.py / generated-members it looks like?
-#
-# not really, we actually want to throw a lint on attribute assignment (which
-# pylint doesn't do except with +=/augmented-assignment, since it assumes the
-# default Python behaviour of setting the attribute before "access" is always
-# fine).
-#
-# e.g. regular Python class:
-# >>> class Foo(): pass
-# >>> foo = Foo()
-# >>> foo.bar = 123  # fine
-#
-# Protobuf-specified class:
-# >>> from test_pb2 import Bar  # only defines 'id' field
-# >>> bar = Bar()
-# >>> bar.baz = 123  # AttributeError
 
 def register(linter):
     linter.register_checker(ProtobufDescriptorChecker(linter))
