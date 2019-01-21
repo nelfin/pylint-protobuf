@@ -34,4 +34,5 @@ setup(
         'astroid',
         'pylint',
     ],
+    zip_safe=False
 )
