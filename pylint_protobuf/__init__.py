@@ -96,10 +96,10 @@ class ProtobufDescriptorChecker(BaseChecker):
     name = 'protobuf-descriptor-checker'
 
     def __init__(self, linter):
+        self.linter = linter
         self._seen_imports = None
         self._known_classes = None
         self._known_variables = None
-        BaseChecker.__init__(linter)
 
     def visit_module(self, node):
         self._seen_imports = []
