@@ -165,7 +165,26 @@ class ProtobufDescriptorChecker(BaseChecker):
         elif obj.name in self._known_variables:
             cls_name = self._known_variables[obj.name]
             cls_fields = self._known_classes[cls_name]
-            if attr.attrname not in cls_fields:
+            if attr.attrname not in cls_fields and attr.attrname not in [
+                "ByteSize",
+                "Clear",
+                "ClearExtension",
+                "ClearField",
+                "CopyFrom",
+                "DESCRIPTOR",
+                "DiscardUnknownFields",
+                "HasExtension",
+                "HasField",
+                "IsInitialized",
+                "ListFields",
+                "MergeFrom",
+                "MergeFromString",
+                "ParseFromString",
+                "SerializePartialToString",
+                "SerializeToString",
+                "SetInParent",
+                "WhichOneof"
+            ]:
                 self.add_message('protobuf-undefined-attribute',
                                  args=(attr.attrname, cls_name), node=attr)
 
