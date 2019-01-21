@@ -15,9 +15,10 @@ message Person {
     import subprocess
     subprocess.check_call(['protoc', 'person.proto', '--python_out=.'])
     from person_pb2 import Person
+    from google.protobuf import message as _message
 
 
 def main():
     """A pedantic docstring."""
-    person = Person()
+    person: _message = Person()
     person.should_warn = 123

@@ -96,10 +96,10 @@ class ProtobufDescriptorChecker(BaseChecker):
     name = 'protobuf-descriptor-checker'
 
     def __init__(self, linter):
-        self.linter = linter
         self._seen_imports = None
         self._known_classes = None
         self._known_variables = None
+        BaseChecker.__init__(linter)
 
     def visit_module(self, node):
         self._seen_imports = []
@@ -127,12 +127,16 @@ class ProtobufDescriptorChecker(BaseChecker):
         if not isinstance(node, astroid.Call):
             return  # NOTE: potentially from visit_attribute
         assignment = node.parent
-        if not isinstance(assignment, astroid.Assign):
+        if isinstance(assignment, astroid.Assign):
+            if len(assignment.targets) > 1:
+                # not going to bother with this case
+                return
+            target = assignment.targets[0]
+        elif isinstance(assignment, astroid.AnnAssign):
+            target = assignment.target
+        else:
             return
-        if len(assignment.targets) > 1:
-            # not going to bother with this case
-            return
-        target = assignment.targets[0]
+
         if not isinstance(target, astroid.AssignName):
             return
         func = node.func
