@@ -127,12 +127,16 @@ class ProtobufDescriptorChecker(BaseChecker):
         if not isinstance(node, astroid.Call):
             return  # NOTE: potentially from visit_attribute
         assignment = node.parent
-        if not isinstance(assignment, astroid.Assign):
+        if isinstance(assignment, astroid.Assign):
+            if len(assignment.targets) > 1:
+                # not going to bother with this case
+                return
+            target = assignment.targets[0]
+        elif isinstance(assignment, astroid.AnnAssign):
+            target = assignment.target
+        else:
             return
-        if len(assignment.targets) > 1:
-            # not going to bother with this case
-            return
-        target = assignment.targets[0]
+
         if not isinstance(target, astroid.AssignName):
             return
         func = node.func
@@ -161,7 +165,26 @@ class ProtobufDescriptorChecker(BaseChecker):
         elif obj.name in self._known_variables:
             cls_name = self._known_variables[obj.name]
             cls_fields = self._known_classes[cls_name]
-            if attr.attrname not in cls_fields:
+            if attr.attrname not in cls_fields and attr.attrname not in [
+                "ByteSize",
+                "Clear",
+                "ClearExtension",
+                "ClearField",
+                "CopyFrom",
+                "DESCRIPTOR",
+                "DiscardUnknownFields",
+                "HasExtension",
+                "HasField",
+                "IsInitialized",
+                "ListFields",
+                "MergeFrom",
+                "MergeFromString",
+                "ParseFromString",
+                "SerializePartialToString",
+                "SerializeToString",
+                "SetInParent",
+                "WhichOneof"
+            ]:
                 self.add_message('protobuf-undefined-attribute',
                                  args=(attr.attrname, cls_name), node=attr)
 
