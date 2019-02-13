@@ -66,3 +66,20 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         with self.assertNoMessages():
             self.walk(node.root())
+
+    def test_aliasing_via_getitem(self):
+        node = astroid.extract_node("""
+        from fake_pb2 import Foo
+
+        bar = {
+            'baz': Foo,
+        }
+
+        foo = bar['baz']()  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('should_warn', 'Foo')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
