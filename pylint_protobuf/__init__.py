@@ -90,6 +90,49 @@ def _extract_fields(node, module_globals={}):
     return None
 
 
+def _try_infer_subscript(node):
+    """
+    Assumed structure is now:
+    <target> = <exp>[<index>]()
+               ^ .value
+                     ^ .slice
+               \____________/ <- .call.func
+
+    Here, :param:`node` equals the .func of Call
+    """
+    value, idx = node.value, node.slice
+    indexable = next(value.infer())
+    index = next(idx.infer())
+    if indexable is astroid.Uninferable or index is astroid.Uninferable:
+        return None
+    if not isinstance(index, astroid.Const):
+        return None
+    i = index.value
+    if hasattr(indexable, 'elts'):  # looks like astroid.List
+        mapping = indexable.elts
+    elif hasattr(indexable, 'items'):  # looks like astroid.Dict
+        try:
+            mapping = {
+                next(k.infer()).value: v for k, v in indexable.items
+            }
+        except AttributeError:
+            mapping = {}  # unable to infer constant key values for lookup
+    else:
+        return None
+    try:
+        name = mapping[i]
+    except (TypeError, KeyError):
+        # no such luck
+        return None
+    else:
+        # Hopefully `name` refers to eithar a ClassDef or an imported Name from
+        # a protobuf-generated module which we can match up with `well_known`
+        # names
+        if not isinstance(name, astroid.Name):
+            return None
+        return name.name
+
+
 class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
     msgs = messages
@@ -144,6 +187,8 @@ class ProtobufDescriptorChecker(BaseChecker):
             name = func.attrname
         elif hasattr(func, 'name'):
             name = func.name
+        elif isinstance(func, astroid.Subscript):
+            name = _try_infer_subscript(func)
         else:
             # TODO: derive name
             name = None
