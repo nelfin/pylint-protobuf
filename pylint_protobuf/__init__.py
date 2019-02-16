@@ -142,8 +142,11 @@ class ProtobufDescriptorChecker(BaseChecker):
         func = node.func
         if isinstance(func, astroid.Attribute):
             name = func.attrname
-        else:
+        elif hasattr(func, 'name'):
             name = func.name
+        else:
+            # TODO: derive name
+            name = None
         if name in self._known_classes:
             self._known_variables[target.name] = name
 
