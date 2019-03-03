@@ -15,6 +15,132 @@ messages = {
 }
 
 
+def _slice(subscript):
+    """
+    slice ::
+        (Subscript (Node value) (Node idx))
+        -> Maybe[Node]
+    """
+    value, idx = subscript.value, subscript.slice
+    indexable = next(value.infer())
+    index = next(idx.infer())
+    if indexable is astroid.Uninferable or index is astroid.Uninferable:
+        return None
+    if not isinstance(index, astroid.Const):
+        return None
+    i = index.value
+    if hasattr(indexable, 'elts'):  # looks like astroid.List
+        mapping = indexable.elts
+    elif hasattr(indexable, 'items'):  # looks like astroid.Dict
+        try:
+            mapping = {
+                next(k.infer()).value: v for k, v in indexable.items
+            }
+        except AttributeError:
+            mapping = {}  # unable to infer constant key values for lookup
+    else:
+        return None
+    try:
+        return mapping[i]
+    except (TypeError, KeyError):
+        return None
+
+
+class TypeClass(object):
+    __slots__ = ('t',)
+
+    def __init__(self, t):
+        self.t = t
+
+
+def _instanceof(typeclass):
+    """
+    instanceof ::
+        typeclass : TypeClass
+        -> Type
+    """
+    if typeclass is None:
+        return None
+    assert isinstance(typeclass, TypeClass)
+    return typeclass.t
+
+
+class Module(object):
+    pass
+    # TODO: imported names?
+
+
+def _typeof(scope, node):
+    """
+    typeof ::
+        scope : Name -> Maybe[Type]
+        node : Node
+        -> Maybe[Type]
+    """
+    if isinstance(node, astroid.Name) or isinstance(node, astroid.AssignName):
+        return scope.get(node.name)
+    elif isinstance(node, astroid.Subscript):
+        return _typeof(scope, _slice(node))
+    elif isinstance(node, astroid.Call):
+        return _instanceof(_typeof(scope, node.func))
+    elif isinstance(node, astroid.Const):
+        # XXX: does it make sense to do this if we only care about dynamic
+        # types from protobuf?
+        return type(node.value)
+    else:
+        # XXX: should this be guarded in some way?
+        return scope.get(node.as_string())
+
+
+def _assign(scope, target, rhs):
+    """
+    assign ::
+        scope : Name -> Maybe[Type]
+        target : Name
+        rhs : Node
+        -> scope' : (Name -> Maybe[Type])
+    """
+    assert isinstance(target, astroid.AssignName)
+    new_type = _typeof(scope, rhs)
+    scope[target.name] = new_type
+    return scope
+
+
+def _assignattr(scope, type_fields, node, rhs):
+    """
+    assignattr ::
+        scope : Name -> Maybe[Type]
+        type_fields : Type -> [str]
+        node : AssignAttr
+        rhs : Node
+        -> [Warning]
+    """
+    assert isinstance(node, astroid.AssignAttr)
+    expr, attr = node.expr, node.attrname
+    expr_type = _typeof(scope, expr)
+    if expr_type is None:
+        return None
+    fields = type_fields.get(expr_type)
+    if fields is None:
+        return None
+    if attr not in fields:
+        return [('protobuf-undefined-attribute', (attr, expr_type), node)]
+    else:
+        return []
+
+
+def visit_assign_node(scope, type_fields, node):
+    assert isinstance(node, astroid.Assign)
+    assert len(node.targets) == 1, "TODO: multiple assignment"
+    target, value = node.targets[0], node.value
+    if isinstance(target, astroid.AssignName):
+        return _assign(scope, target, value), []
+    elif isinstance(target, astroid.AssignAttr):
+        return scope, _assignattr(scope, type_fields, target, value)
+    else:
+        assert False, "unexpected case like Subscript, tuple-unpacking etc."
+
+
 def _parse_fields(iterable):
     """
     Lift field names from keyword arguments to descriptor_pb2.FieldDescriptor.
@@ -88,6 +214,85 @@ def _extract_fields(node, module_globals={}):
             if getattr(key, 'value', None) == 'DESCRIPTOR':
                 return parse_name(var)
     return None
+
+
+def _do_import(node, module_name, type_fields):
+    assert isinstance(node, (astroid.Import, astroid.ImportFrom))
+    new_fields = type_fields.copy()
+    del type_fields
+    try:
+        mod = node.do_import_module(module_name)
+    except astroid.TooManyLevelsError:
+        return
+    except astroid.AstroidBuildingException:
+        return  # TODO: warn about not being able to import?
+
+    imported_names = None  # ignore aliases of modules
+    if isinstance(node, astroid.ImportFrom):
+        imported_names = node.names
+    aliases = {
+        name: alias
+        for name, alias in (imported_names or [])
+        if alias is not None
+    }
+
+    def likely_name(n):
+        if imported_names is not None:
+            # NOTE: only map aliases when mapping names to fields, not when
+            # checking mod.globals (since they haven't been renamed yet).
+            return any(n == name for name, _ in imported_names)
+        return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR')
+
+    def qualified_name(n):
+        if isinstance(node, astroid.Import):
+            return '{}.{}'.format(module_name, n)
+        return aliases.get(n, n)
+
+    for original_name, nodes in mod.globals.items():
+        if likely_name(original_name):
+            # FIXME: multiple nodes, renamings?
+            fields = _extract_fields(nodes[0], mod.globals)
+            if fields is not None:
+                imported_name = qualified_name(original_name)
+                new_fields[imported_name] = fields
+    return new_fields
+
+
+def import_(node, scope, type_fields):
+    """
+    import ::
+        scope : Name -> Maybe[Type]
+        type_fields : Type -> [str]
+        node : Import | ImportFrom
+        -> (scope' : Name -> Maybe[Type], type_fields': Type -> [str])
+    """
+    # XXX: fix all this names stuff
+    modname = node.names[0][0]
+    new_fields = _do_import(node, modname, type_fields)
+    new_scope = scope.copy()
+    new_scope[modname] = Module()
+    return new_scope, new_fields
+
+    def visit_module(self, node):
+        self._seen_imports = []
+        self._known_classes = {}
+        self._known_variables = {}
+
+    def leave_module(self, node):
+        self._seen_imports = []
+        self._known_classes = {}
+        self._known_variables = {}
+
+    def visit_import(self, node):
+        for name, alias in node.names:
+            if name.endswith('_pb2'):
+                self._seen_imports.append(alias)
+                self._load_known_classes(node, name)
+
+    def visit_importfrom(self, node):
+        if node.modname.endswith('_pb2'):
+            self._seen_imports.append(node.modname)  # TODO
+            self._load_known_classes(node, node.modname)
 
 
 def _try_infer_subscript(node):
@@ -249,8 +454,9 @@ class ProtobufDescriptorChecker(BaseChecker):
                 imported_names = importnode.names
             self._walk_protobuf_generated_module(mod, imported_names)
 
-    # type: imported_names: Optional[List[Tuple[str, Optional[str]]]]
     def _walk_protobuf_generated_module(self, mod, imported_names):
+        # type: (str, int) -> None
+        #Optional[List[Tuple[str, Optional[str]]]]) -> None
         def likely_name(n):
             if imported_names is not None:
                 # NOTE: only map aliases when mapping names to fields, not when

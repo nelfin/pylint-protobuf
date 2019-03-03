@@ -1,3 +1,5 @@
+import textwrap
+
 import astroid
 import pylint.testutils
 
@@ -197,3 +199,125 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
+
+    def test_new_typeof(self):
+        Person = object()
+        scope = {'Person': Person}
+        node = astroid.extract_node('Person')
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_slice_list(self):
+        Person = object()
+        scope = {'Person': Person}
+        node = astroid.extract_node('[Person][0]')
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_slice_dict(self):
+        Person = object()
+        scope = {'Person': Person}
+        node = astroid.extract_node('{"a": Person}["a"]')
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_slice_nested_dict(self):
+        Person = object()
+        scope = {'Person': Person}
+        node = astroid.extract_node("""
+        {
+            "outer": {
+                "inner": Person
+            }
+        }["outer"]["inner"]
+        """)
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_typeof_call(self):
+        Person = object()
+        scope = {'Person': pylint_protobuf.TypeClass(Person)}
+        node = astroid.extract_node("""
+        Person()
+        """)
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_assign(self):
+        Person = object()
+        scope = {'Person': Person}
+        assign = astroid.extract_node("a = Person")
+        scope, _ = pylint_protobuf.visit_assign_node(scope, {}, assign)
+        assert 'a' in scope
+        assert scope['a'] is Person
+
+    def test_new_assign2(self):
+        scope = {}
+        assign = astroid.extract_node("a = 1")
+        scope, _ = pylint_protobuf.visit_assign_node(scope, {}, assign)
+        assert 'a' in scope
+        assign = astroid.extract_node("b = a")
+        scope, _ = pylint_protobuf.visit_assign_node(scope, {}, assign)
+        assert 'b' in scope
+        assert scope['b'] is int
+
+    def test_new_assignattr(self):
+        Person = object()
+        type_fields = {Person: ['foo', 'bar']}
+        scope = {'a': Person}
+        assign = astroid.extract_node("a.should_warn = 123")
+        _, messages = pylint_protobuf.visit_assign_node(scope, type_fields, assign)
+        assert len(messages) == 1
+        msg, _, node = messages[0]
+        assert msg == 'protobuf-undefined-attribute'
+        assert node == assign.targets[0]
+
+    def test_new_typeof_import(self):
+        Person = object()
+        scope = {'module_pb2': pylint_protobuf.Module, 'module_pb2.Person': Person}
+        node = astroid.extract_node('module_pb2.Person')
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_typeof_wacky_import(self):
+        Person = object()
+        Rando = object()
+        scope = {
+            'mod': pylint_protobuf.Module,
+            'other': pylint_protobuf.Module,
+            'mod.child': pylint_protobuf.Module,
+            'mod.child.Person': Person,
+            'other.child': pylint_protobuf.Module,
+            'other.child.Person': Rando,
+        }
+        node = astroid.extract_node('mod.child.Person')
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_typeof_module_factory_import(self):
+        Factory = object()
+        Person = object()
+        scope = {
+            'factory': Factory,
+            'factory.mod': pylint_protobuf.Module,
+            'factory.mod.Person': Person,
+        }
+        node = astroid.extract_node('factory.mod.Person')
+        assert pylint_protobuf._typeof(scope, node) is Person
+
+    def test_new_import(self, tmpdir, monkeypatch):
+        monkeypatch.syspath_prepend(tmpdir)
+        p = tmpdir.join('module_pb2.py')
+        p.write(textwrap.dedent("""
+        class _FieldDescriptor(object):
+            def __init__(self, name): pass
+        class _Descriptor(object):
+            def __init__(self, name, fields): pass
+        _PERSON = _Descriptor(
+            name='PERSON',
+            fields=[_FieldDescriptor(name='valid_field')],
+        )
+        Person = type('Person', (object, ), {'DESCRIPTOR': _PERSON})
+        """))
+        scope, fields = {}, {}
+        node = astroid.extract_node('import module_pb2')
+        scope, fields = pylint_protobuf.import_(node, scope, fields)
+        assert 'module_pb2' in scope
+        # assert 'module_pb2.Person' in scope
+        # Person = scope['module_pb2.Person']
+        # assert fields[Person] == ['foo', 'bar']
+        assert 'module_pb2.Person' in fields
+        assert fields['module_pb2.Person'] == ['valid_field']
