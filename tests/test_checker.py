@@ -108,6 +108,18 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    def test_aliasing_via_getitem_uninferable_should_not_warn(self):
+        node = astroid.extract_node("""
+        from fake_pb2 import Foo
+        from random import randint
+
+        types = [Foo, int]
+        foo = types[randint(0, 2)]()
+        foo.should_warn = 123  #@
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
     def test_aliasing_via_getitem_nested_lists(self):
         node = astroid.extract_node("""
         from fake_pb2 import Foo
@@ -130,6 +142,21 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         Indirect = Foo
         foo = Indirect()
         foo.should_warn = 123  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('should_warn', 'Foo')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def xtest_aliasing_via_instance_renaming(self):
+        node = astroid.extract_node("""
+        from fake_pb2 import Foo
+
+        foo = Foo()
+        bar = foo
+        bar.should_warn = 123  #@
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
