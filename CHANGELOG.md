@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [Unreleased]
+## [0.2] - 2019-03-03
 - Fixes for use of annotated assignments, thanks @TimKingNF
 - Fix for broken assumption about assignment RHS in `visit_call`, thanks
   @endafarrell for the report and help debugging
