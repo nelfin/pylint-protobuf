@@ -261,7 +261,7 @@ def _do_import(node, module_name, type_fields):
     return new_fields
 
 
-def import_(node, scope, type_fields):
+def import_(node, modname, scope, type_fields):
     """
     import ::
         scope : Name -> Maybe[Type]
@@ -269,33 +269,10 @@ def import_(node, scope, type_fields):
         node : Import | ImportFrom
         -> (scope' : Name -> Maybe[Type], type_fields': Type -> [str])
     """
-    # XXX: fix all this names stuff
-    modname = node.names[0][0]
     new_fields = _do_import(node, modname, type_fields)
     new_scope = scope.copy()
     new_scope[modname] = Module()
     return new_scope, new_fields
-
-    def visit_module(self, node):
-        self._seen_imports = []
-        self._known_classes = {}
-        self._known_variables = {}
-
-    def leave_module(self, node):
-        self._seen_imports = []
-        self._known_classes = {}
-        self._known_variables = {}
-
-    def visit_import(self, node):
-        for name, alias in node.names:
-            if name.endswith('_pb2'):
-                self._seen_imports.append(alias)
-                self._load_known_classes(node, name)
-
-    def visit_importfrom(self, node):
-        if node.modname.endswith('_pb2'):
-            self._seen_imports.append(node.modname)  # TODO
-            self._load_known_classes(node, node.modname)
 
 
 def _try_infer_subscript(node):
@@ -341,6 +318,11 @@ def _try_infer_subscript(node):
         return name.name
 
 
+def issubset(left, right):
+    """A subset relation for dictionaries"""
+    return set(left.keys()) <= set(right.keys())
+
+
 class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
     msgs = messages
@@ -351,28 +333,40 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._seen_imports = None
         self._known_classes = None
         self._known_variables = None
+        self._scope = None
+        self._type_fields = None
 
-    def visit_module(self, node):
+    def visit_module(self, _):
         self._seen_imports = []
         self._known_classes = {}
         self._known_variables = {}
+        self._scope = {}
+        self._type_fields = {}
 
-    def leave_module(self, node):
+    def leave_module(self, _):
         self._seen_imports = []
         self._known_classes = {}
         self._known_variables = {}
+        self._scope = {}
+        self._type_fields = {}
 
     def visit_import(self, node):
-        modnode = node.root()
-        for name, alias in node.names:
-            if name.endswith('_pb2'):
-                self._seen_imports.append(alias)
-                self._load_known_classes(node, name)
+        for modname, alias in node.names:
+            # TODO: alias?
+            assert alias is None, "unimplemented"
+            self._import_node(node, modname)
 
     def visit_importfrom(self, node):
-        if node.modname.endswith('_pb2'):
-            self._seen_imports.append(node.modname)  # TODO
-            self._load_known_classes(node, node.modname)
+        self._import_node(node, node.modname)
+
+    def _import_node(self, node, modname):
+        if not modname.endswith('_pb2'):
+            return
+        new_scope, new_fields = import_(node, modname, self._scope, self._type_fields)
+        assert issubset(self._scope, new_scope)
+        assert issubset(self._type_fields, new_fields)
+        self._scope = new_scope
+        self._type_fields = new_fields
 
     def visit_call(self, node):
         if not isinstance(node, astroid.Call):
@@ -400,7 +394,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         else:
             # TODO: derive name
             name = None
-        if name in self._known_classes:
+        if name in self._type_fields:
             self._known_variables[target.name] = name
 
     def visit_assignattr(self, node):
@@ -416,11 +410,11 @@ class ProtobufDescriptorChecker(BaseChecker):
             return
         attr = node
         if obj.name in self._seen_imports:
-            if attr.attrname in self._known_classes:
+            if attr.attrname in self._type_fields:
                 self.visit_call(attr.parent)
         elif obj.name in self._known_variables:
             cls_name = self._known_variables[obj.name]
-            cls_fields = self._known_classes[cls_name]
+            cls_fields = self._type_fields[cls_name]
             if attr.attrname not in cls_fields and attr.attrname not in [
                 "ByteSize",
                 "Clear",
