@@ -179,7 +179,7 @@ def _parse_descriptor(node):
     return None
 
 
-def _extract_fields(node, module_globals={}):
+def _extract_fields(node, module_globals=None):
     """
     Given a "name = type(...)"-style assignment, look up the variable
     corresponding to the protobuf-generated descriptor in the module and parse
@@ -194,6 +194,9 @@ def _extract_fields(node, module_globals={}):
     )
     ```
     """
+    if module_globals is None:
+        module_globals = {}
+
     def parse_name(var):
         if not isinstance(var, astroid.Name):
             return None
