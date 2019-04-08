@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package test;
+
+message Inner {
+  required string value = 1;
+}
+
+message Outer {
+  required Inner inner = 1;
+}
