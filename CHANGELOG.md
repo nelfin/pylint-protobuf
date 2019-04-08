@@ -6,6 +6,7 @@
 - Fixes for multiple aliases of the same name in "from .. import" clauses
 - Add support for repeated fields
 - Fixes for support for inner classes in protobuf definitions
+- Fixes for warnings on nested message fields, thanks @zapstar for the report
 
 ## [0.2] - 2019-03-03
 - Fixes for use of annotated assignments, thanks @TimKingNF
