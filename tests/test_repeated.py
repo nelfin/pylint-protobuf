@@ -1,3 +1,4 @@
+import pytest
 import astroid
 import pylint.testutils
 
@@ -7,6 +8,7 @@ import pylint_protobuf
 class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
+    @pytest.mark.xfail(reason='unimplemented')
     def test_missing_field_on_repeated_warns(self):
         node = astroid.extract_node("""
         import repeated_pb2

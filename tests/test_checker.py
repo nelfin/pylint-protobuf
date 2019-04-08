@@ -69,6 +69,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    @pytest.mark.xfail(reason='unimplemented')
     def test_importfrom_with_multiple_aliasing(self):
         node = astroid.extract_node("""
         from fake_pb2 import Foo, Foo as Bar
