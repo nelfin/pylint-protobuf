@@ -65,10 +65,14 @@ def _instanceof(typeclass):
 
 
 class Module(object):
-    __slots__ = ('original_name',)
+    __slots__ = ('original_name', 'module_globals',)
 
-    def __init__(self, original_name):
+    def __init__(self, original_name, module_globals):
         self.original_name = original_name
+        self.module_globals = module_globals
+
+    def __repr__(self):
+        return "Module({}, {})".format(self.original_name, self.module_globals)
 
 
 def _typeof(scope, node):
@@ -237,27 +241,21 @@ def _do_import(node, module_name, scope, type_fields):
     except astroid.AstroidBuildingException:
         return  # TODO: warn about not being able to import?
 
-    imported_names = None  # ignore aliases of modules
+    imported_names = []
     if isinstance(node, astroid.ImportFrom):
         imported_names = node.names
-    aliases = {
-        name: alias
-        for name, alias in (imported_names or [])
-        if alias is not None
-    }
 
     def likely_name(n):
-        if imported_names is not None:
+        if imported_names:
             # NOTE: only map aliases when mapping names to fields, not when
             # checking mod.globals (since they haven't been renamed yet).
             return any(n == name for name, _ in imported_names)
         return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR')
 
     def qualified_name(n):
-        if isinstance(node, astroid.Import):
-            return '{}.{}'.format(module_name, n)
-        return aliases.get(n, n)
+        return '{}.{}'.format(module_name, n)
 
+    new_names = {}
     for original_name, nodes in mod.globals.items():
         if likely_name(original_name):
             # FIXME: multiple nodes, renamings?
@@ -265,8 +263,13 @@ def _do_import(node, module_name, scope, type_fields):
             if fields is not None:
                 imported_name = qualified_name(original_name)
                 new_fields[imported_name] = fields
-                new_scope[imported_name] = TypeClass(imported_name)
-    new_scope[module_name] = Module(module_name)
+                new_names[imported_name] = TypeClass(imported_name)
+
+    new_scope[module_name] = Module(module_name, new_names)
+    for name, alias in imported_names:  # check aliasing for ImportFrom
+        if alias is None:
+            alias = name
+        new_scope[alias] = new_names[qualified_name(name)]
     return new_scope, new_fields
 
 

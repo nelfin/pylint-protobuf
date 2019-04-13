@@ -10,7 +10,7 @@ import pylint_protobuf
 class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    def test_module_import_only(self):
+    def test_module_import_should_warn(self):
         node = astroid.extract_node("""
         import person_pb2 as person
 
@@ -26,7 +26,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_module_import_as_self(self):
+    def test_module_import_as_self_should_warn(self):
         node = astroid.extract_node("""
         import person_pb2 as person_pb2
 
@@ -40,7 +40,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_importfrom(self):
+    def test_importfrom_should_warn(self):
         node = astroid.extract_node("""
         from fake_pb2 import Foo
 
@@ -49,7 +49,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Foo')
+            node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
@@ -63,12 +63,12 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Outer')
+            node=node.targets[0], args=('should_warn', 'complexfield_pb2.Outer')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_importfrom_with_aliasing(self):
+    def test_importfrom_with_aliasing_should_warn(self):
         node = astroid.extract_node("""
         from fake_pb2 import Foo as Bar
 
@@ -80,12 +80,11 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Bar')
+            node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_importfrom_with_multiple_aliasing(self):
         node = astroid.extract_node("""
         from fake_pb2 import Foo, Foo as Bar
@@ -95,7 +94,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Foo')
+            node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
@@ -131,7 +130,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Foo')
+            node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
@@ -149,7 +148,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Foo')
+            node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
@@ -176,7 +175,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Foo')
+            node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
