@@ -65,8 +65,10 @@ def _instanceof(typeclass):
 
 
 class Module(object):
-    pass
-    # TODO: imported names?
+    __slots__ = ('original_name',)
+
+    def __init__(self, original_name):
+        self.original_name = original_name
 
 
 def _typeof(scope, node):
@@ -76,18 +78,19 @@ def _typeof(scope, node):
         node : Node
         -> Maybe[Type]
     """
-    if isinstance(node, astroid.Name) or isinstance(node, astroid.AssignName):
+    if isinstance(node, (astroid.Name, astroid.AssignName)):
         return scope.get(node.name)
     elif isinstance(node, astroid.Subscript):
         return _typeof(scope, _slice(node))
     elif isinstance(node, astroid.Call):
         return _instanceof(_typeof(scope, node.func))
     elif isinstance(node, astroid.Const):
-        # XXX: does it make sense to do this if we only care about dynamic
-        # types from protobuf?
-        return type(node.value)
+        return None
+        # NOTE: not returning type(node.value) anymore as it breaks assumptions
+        # around _instanceof
     else:
-        # XXX: should this be guarded in some way?
+        if node is None:
+            return None  # node may be Uninferable
         return scope.get(node.as_string())
 
 
@@ -100,12 +103,14 @@ def _assign(scope, target, rhs):
         -> scope' : (Name -> Maybe[Type])
     """
     assert isinstance(target, astroid.AssignName)
-    new_type = _typeof(scope, rhs)
-    scope[target.name] = new_type
-    return scope
+    new_scope = scope.copy()
+    del scope
+    new_type = _typeof(new_scope, rhs)
+    new_scope[target.name] = new_type
+    return new_scope
 
 
-def _assignattr(scope, type_fields, node, rhs):
+def _assignattr(scope, type_fields, node, _):
     """
     assignattr ::
         scope : Name -> Maybe[Type]
@@ -118,14 +123,13 @@ def _assignattr(scope, type_fields, node, rhs):
     expr, attr = node.expr, node.attrname
     expr_type = _typeof(scope, expr)
     if expr_type is None:
-        return None
+        return []  # not something we're tracking?
     fields = type_fields.get(expr_type)
     if fields is None:
-        return None
+        assert False, "type fields missing for {!r}".format(expr_type)
     if attr not in fields:
         return [('protobuf-undefined-attribute', (attr, expr_type), node)]
-    else:
-        return []
+    return []
 
 
 def visit_assign_node(scope, type_fields, node):
@@ -134,10 +138,13 @@ def visit_assign_node(scope, type_fields, node):
     target, value = node.targets[0], node.value
     if isinstance(target, astroid.AssignName):
         return _assign(scope, target, value), []
-    elif isinstance(target, astroid.AssignAttr):
+    if isinstance(target, astroid.AssignAttr):
         return scope, _assignattr(scope, type_fields, target, value)
-    else:
-        assert False, "unexpected case like Subscript, tuple-unpacking etc."
+    assert False, "unexpected case like Subscript, tuple-unpacking etc."
+
+
+def visit_getattr(scope, type_fields, node):
+    assert False, "TODO"
 
 
 def _parse_fields(iterable):
@@ -218,10 +225,11 @@ def _extract_fields(node, module_globals=None):
     return None
 
 
-def _do_import(node, module_name, type_fields):
+def _do_import(node, module_name, scope, type_fields):
     assert isinstance(node, (astroid.Import, astroid.ImportFrom))
+    new_scope = scope.copy()
     new_fields = type_fields.copy()
-    del type_fields
+    del type_fields, scope
     try:
         mod = node.do_import_module(module_name)
     except astroid.TooManyLevelsError:
@@ -257,7 +265,9 @@ def _do_import(node, module_name, type_fields):
             if fields is not None:
                 imported_name = qualified_name(original_name)
                 new_fields[imported_name] = fields
-    return new_fields
+                new_scope[imported_name] = TypeClass(imported_name)
+    new_scope[module_name] = Module(module_name)
+    return new_scope, new_fields
 
 
 def import_(node, modname, scope, type_fields):
@@ -268,9 +278,7 @@ def import_(node, modname, scope, type_fields):
         node : Import | ImportFrom
         -> (scope' : Name -> Maybe[Type], type_fields': Type -> [str])
     """
-    new_fields = _do_import(node, modname, type_fields)
-    new_scope = scope.copy()
-    new_scope[modname] = Module()
+    new_scope, new_fields = _do_import(node, modname, scope, type_fields)
     return new_scope, new_fields
 
 
@@ -351,53 +359,36 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def visit_import(self, node):
         for modname, alias in node.names:
-            # TODO: alias?
-            assert alias is None, "unimplemented"
-            self._import_node(node, modname)
+            self._import_node(node, modname, alias)
 
     def visit_importfrom(self, node):
         self._import_node(node, node.modname)
 
-    def _import_node(self, node, modname):
+    def _import_node(self, node, modname, alias=None):
         if not modname.endswith('_pb2'):
             return
         new_scope, new_fields = import_(node, modname, self._scope, self._type_fields)
         assert issubset(self._scope, new_scope)
         assert issubset(self._type_fields, new_fields)
+        if alias is not None:
+            diff = new_scope[modname]
+            del new_scope[modname]
+            new_scope[alias] = diff
         self._scope = new_scope
         self._type_fields = new_fields
 
-    def visit_call(self, node):
-        if not isinstance(node, astroid.Call):
-            return  # NOTE: potentially from visit_attribute
-        assignment = node.parent
-        if isinstance(assignment, astroid.Assign):
-            if len(assignment.targets) > 1:
-                # not going to bother with this case
-                return
-            target = assignment.targets[0]
-        elif isinstance(assignment, astroid.AnnAssign):
-            target = assignment.target
-        else:
-            return
-
-        if not isinstance(target, astroid.AssignName):
-            return
-        func = node.func
-        if isinstance(func, astroid.Attribute):
-            name = func.attrname
-        elif hasattr(func, 'name'):
-            name = func.name
-        elif isinstance(func, astroid.Subscript):
-            name = _try_infer_subscript(func)
-        else:
-            # TODO: derive name
-            name = None
-        if name in self._type_fields:
-            self._known_variables[target.name] = name
+    @utils.check_messages('protobuf-undefined-attribute')
+    def visit_assign(self, node):
+        new_scope, messages = visit_assign_node(self._scope, self._type_fields, node)
+        assert issubset(self._scope, new_scope)
+        self._scope = new_scope
+        if messages:
+            assert len(messages) == 1, "unexpected"
+        for code, args, target in messages:
+            self.add_message(code, args=args, node=target)
 
     def visit_assignattr(self, node):
-        self.visit_attribute(node)
+        pass
 
     def visit_delattr(self, node):
         self.visit_attribute(node)

@@ -21,11 +21,12 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(inner.root())
 
+    @pytest.mark.xfail(reason='unimplemented')
     def test_class_scope_closure_restores_warnings(self):
         outer = astroid.extract_node("""
         from fake_pb2 import Foo
         class Outer:
-            class Foo: pass
+            Foo = object
         outer = Foo()
         outer.should_warn = 123  #@
         """)
@@ -48,6 +49,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(inner.root())
 
+    @pytest.mark.xfail(reason='unimplemented')
     def test_function_scope_closure_restores_warnings(self):
         outer = astroid.extract_node("""
         from fake_pb2 import Foo

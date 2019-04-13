@@ -10,7 +10,7 @@ import pylint_protobuf
 class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    def xtest_module_import(self):
+    def test_module_import_only(self):
         node = astroid.extract_node("""
         import person_pb2 as person
 
@@ -21,7 +21,21 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('invalid_field', 'Person')
+            node=node.targets[0], args=('invalid_field', 'person_pb2.Person')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_module_import_as_self(self):
+        node = astroid.extract_node("""
+        import person_pb2 as person_pb2
+
+        foo = person_pb2.Person()
+        foo.invalid_field = 'should warn'  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('invalid_field', 'person_pb2.Person')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
