@@ -3,8 +3,7 @@ from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
 BASE_ID = 59
-
-messages = {
+MESSAGES = {
     'E%02d01' % BASE_ID: (
         'Field %r does not appear in the declared fields of protobuf-'
         'generated class %r and will raise AttributeError on access',
@@ -325,7 +324,7 @@ def issubset(left, right):
 
 class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
-    msgs = messages
+    msgs = MESSAGES
     name = 'protobuf-descriptor-checker'
 
     def __init__(self, linter):
