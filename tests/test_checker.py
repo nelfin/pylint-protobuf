@@ -290,16 +290,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         assert 'a' in scope
         assert scope['a'] is Person
 
-    def test_new_assign2(self):
-        scope = {}
-        assign = astroid.extract_node("a = 1")
-        scope, _ = pylint_protobuf.visit_assign_node(scope, {}, assign)
-        assert 'a' in scope
-        assign = astroid.extract_node("b = a")
-        scope, _ = pylint_protobuf.visit_assign_node(scope, {}, assign)
-        assert 'b' in scope
-        assert scope['b'] is int
-
     def test_new_assignattr(self):
         Person = object()
         type_fields = {Person: ['foo', 'bar']}
