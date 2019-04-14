@@ -407,8 +407,6 @@ class ProtobufDescriptorChecker(BaseChecker):
         new_scope, messages = visit_assign_node(self._scope, self._type_fields, node)
         assert issubset(self._scope, new_scope)
         self._scope = new_scope
-        if messages:
-            assert len(messages) == 1, "unexpected"
         for code, args, target in messages:
             self.add_message(code, args=args, node=target)
 

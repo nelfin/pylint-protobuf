@@ -246,6 +246,27 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    def test_bad_fields_in_multiple_assignment_multiple_messages(self):
+        node = astroid.extract_node("""
+        from fake_pb2 import Foo
+
+        foo = Foo()
+        bar = Foo()
+        foo.should_warn = bar.should_also_warn = 123  #@
+        """)
+        messages = [
+            pylint.testutils.Message(
+                'protobuf-undefined-attribute',
+                node=node.targets[0], args=('should_warn', 'fake_pb2.Foo')
+            ),
+            pylint.testutils.Message(
+                'protobuf-undefined-attribute',
+                node=node.targets[1], args=('should_also_warn', 'fake_pb2.Foo')
+            ),
+        ]
+        with self.assertAddsMessages(*messages):
+            self.walk(node.root())
+
     @pytest.mark.xfail(reason='unimplemented')
     def test_aliasing_via_indirection_getitem(self):
         node = astroid.extract_node("""
