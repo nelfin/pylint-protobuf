@@ -65,11 +65,15 @@ def _instanceof(typeclass):
 
 
 class Module(object):
-    __slots__ = ('original_name', 'module_globals',)
+    __slots__ = ('original_name', 'module_globals')
 
     def __init__(self, original_name, module_globals):
         self.original_name = original_name
         self.module_globals = module_globals
+
+    def getattr(self, var):
+        qualified_name = '{}.{}'.format(self.original_name, var)
+        return self.module_globals.get(qualified_name)
 
     def __repr__(self):
         return "Module({}, {})".format(self.original_name, self.module_globals)
@@ -92,6 +96,15 @@ def _typeof(scope, node):
         return None
         # NOTE: not returning type(node.value) anymore as it breaks assumptions
         # around _instanceof
+    elif isinstance(node, astroid.Attribute):
+        try:
+            module = scope.get(node.expr.name)
+            attr = module.getattr(node.attrname)
+            return _typeof(scope, attr)
+        except AttributeError:
+            return None
+    elif isinstance(node, TypeClass):
+        return node
     else:
         if node is None:
             return None  # node may be Uninferable
