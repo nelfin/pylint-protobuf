@@ -458,8 +458,6 @@ class ProtobufDescriptorChecker(BaseChecker):
             self._walk_protobuf_generated_module(mod, imported_names)
 
     def _walk_protobuf_generated_module(self, mod, imported_names):
-        # type: (str, int) -> None
-        #Optional[List[Tuple[str, Optional[str]]]]) -> None
         def likely_name(n):
             if imported_names is not None:
                 # NOTE: only map aliases when mapping names to fields, not when
