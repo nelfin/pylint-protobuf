@@ -151,13 +151,22 @@ def _assignattr(scope, type_fields, node, _):
 
 def visit_assign_node(scope, type_fields, node):
     assert isinstance(node, astroid.Assign)
-    assert len(node.targets) == 1, "TODO: multiple assignment"
-    target, value = node.targets[0], node.value
-    if isinstance(target, astroid.AssignName):
-        return _assign(scope, target, value), []
-    if isinstance(target, astroid.AssignAttr):
-        return scope, _assignattr(scope, type_fields, target, value)
-    assert False, "unexpected case like Subscript, tuple-unpacking etc."
+    new_scope, old_scope = scope.copy(), scope.copy()
+    del scope
+    targets, value = node.targets, node.value
+    messages = []
+    for target in targets:
+        if isinstance(target, astroid.AssignName):
+            # NOTE: we still use old_scope here for every target here since
+            # locals is not updated until the end of the assignment, i.e.
+            # foo.ref = foo = Foo() will trigger a NameError if foo is not
+            # already in scope
+            new_scope.update(_assign(old_scope, target, value))
+        elif isinstance(target, astroid.AssignAttr):
+            messages.extend(_assignattr(old_scope, type_fields, target, value))
+        else:
+            assert False, "unexpected case like Subscript, tuple-unpacking etc."
+    return new_scope, messages
 
 
 def visit_getattr(scope, type_fields, node):
