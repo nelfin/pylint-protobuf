@@ -9,4 +9,5 @@ clean:
 	-rm -r dist/
 
 upload: clean dist
+	twine check dist/*
 	twine upload dist/*
