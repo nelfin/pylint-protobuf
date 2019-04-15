@@ -159,7 +159,6 @@ def visit_assign_node(scope, type_fields, node):
     else:
         targets = node.targets
     for target in targets:
-        print(target, isinstance(target, astroid.AssignName))
         if isinstance(target, astroid.AssignName):
             # NOTE: we still use old_scope here for every target here since
             # locals is not updated until the end of the assignment, i.e.
@@ -406,14 +405,15 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._scope = new_scope
         self._type_fields = new_fields
 
+    @utils.check_messages('protobuf-undefined-attribute')
     def visit_annassign(self, node):
-        new_scope, messages = visit_assign_node(self._scope, self._type_fields, node)
-        assert issubset(self._scope, new_scope)
-        assert not messages, "non-attribute assignment shouldn't warn"
-        self._scope = new_scope
+        self._visit_assign(node)
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assign(self, node):
+        self._visit_assign(node)
+
+    def _visit_assign(self, node):
         new_scope, messages = visit_assign_node(self._scope, self._type_fields, node)
         assert issubset(self._scope, new_scope)
         self._scope = new_scope
