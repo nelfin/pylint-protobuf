@@ -12,6 +12,26 @@ MESSAGES = {
         'accessed'
     ),
 }
+PROTOBUF_IMPLICIT_ATTRS = [  # TODO: use these
+    'ByteSize',
+    'Clear',
+    'ClearExtension',
+    'ClearField',
+    'CopyFrom',
+    'DESCRIPTOR',
+    'DiscardUnknownFields',
+    'HasExtension',
+    'HasField',
+    'IsInitialized',
+    'ListFields',
+    'MergeFrom',
+    'MergeFromString',
+    'ParseFromString',
+    'SerializePartialToString',
+    'SerializeToString',
+    'SetInParent',
+    'WhichOneof',
+]
 
 
 def _slice(subscript):
@@ -365,23 +385,14 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def __init__(self, linter):
         self.linter = linter
-        self._seen_imports = None
-        self._known_classes = None
-        self._known_variables = None
         self._scope = None
         self._type_fields = None
 
     def visit_module(self, _):
-        self._seen_imports = []
-        self._known_classes = {}
-        self._known_variables = {}
         self._scope = {}
         self._type_fields = {}
 
     def leave_module(self, _):
-        self._seen_imports = []
-        self._known_classes = {}
-        self._known_variables = {}
         self._scope = {}
         self._type_fields = {}
 
@@ -424,74 +435,10 @@ class ProtobufDescriptorChecker(BaseChecker):
         pass
 
     def visit_delattr(self, node):
-        self.visit_attribute(node)
+        pass
 
-    @utils.check_messages('protobuf-undefined-attribute')
     def visit_attribute(self, node):
-        obj = node.expr
-        if not isinstance(obj, astroid.Name):
-            return
-        attr = node
-        if obj.name in self._seen_imports:
-            if attr.attrname in self._type_fields:
-                self.visit_call(attr.parent)
-        elif obj.name in self._known_variables:
-            cls_name = self._known_variables[obj.name]
-            cls_fields = self._type_fields[cls_name]
-            if attr.attrname not in cls_fields and attr.attrname not in [
-                "ByteSize",
-                "Clear",
-                "ClearExtension",
-                "ClearField",
-                "CopyFrom",
-                "DESCRIPTOR",
-                "DiscardUnknownFields",
-                "HasExtension",
-                "HasField",
-                "IsInitialized",
-                "ListFields",
-                "MergeFrom",
-                "MergeFromString",
-                "ParseFromString",
-                "SerializePartialToString",
-                "SerializeToString",
-                "SetInParent",
-                "WhichOneof"
-            ]:
-                self.add_message('protobuf-undefined-attribute',
-                                 args=(attr.attrname, cls_name), node=attr)
-
-    def _load_known_classes(self, importnode, modname):
-        try:
-            mod = importnode.do_import_module(modname)
-        except astroid.TooManyLevelsError:
-            pass
-        except astroid.AstroidBuildingException as ex:
-            pass  # TODO: warn about not being able to import?
-        else:
-            imported_names = None  # ignore aliases of modules
-            if isinstance(importnode, astroid.ImportFrom):
-                imported_names = importnode.names
-            self._walk_protobuf_generated_module(mod, imported_names)
-
-    def _walk_protobuf_generated_module(self, mod, imported_names):
-        def likely_name(n):
-            if imported_names is not None:
-                # NOTE: only map aliases when mapping names to fields, not when
-                # checking mod.globals (since they haven't been renamed yet).
-                return any(n == name for name, _ in imported_names)
-            return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR')
-        aliases = {
-            name: alias
-            for name, alias in (imported_names or [])
-            if alias is not None
-        }
-        for original_name, node in mod.globals.items():
-            if likely_name(original_name):
-                imported_name = aliases.get(original_name, original_name)
-                fields = _extract_fields(node[0], mod.globals)
-                if fields is not None:
-                    self._known_classes[imported_name] = fields
+        pass
 
 
 def register(linter):
