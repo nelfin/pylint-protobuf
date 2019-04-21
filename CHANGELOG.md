@@ -1,12 +1,10 @@
 # pylint-protobuf
 
-## [Unreleased]
+## [0.3]
 - Refactor of parsing internals to cover more edge cases
-- Fixes for nested scoping rules
 - Fixes for multiple aliases of the same name in "from .. import" clauses
-- Add support for repeated fields
-- Fixes for support for inner classes in protobuf definitions
-- Fixes for warnings on nested message fields, thanks @zapstar for the report
+- Fix issue #2: suppression of no-member for protobuf classes, thanks
+  @endafarrel for the initial report and @zapstar for additional reporting
 
 ## [0.2] - 2019-03-03
 - Fixes for use of annotated assignments, thanks @TimKingNF
