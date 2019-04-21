@@ -149,16 +149,16 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    # @pytest.mark.xfail(reason='unimplemented')
     def test_complex_field(self):
         node = astroid.extract_node("""
         from complexfield_pb2 import Outer
-        outer = complexfield_pb2.Outer()
+        outer = Outer()
         outer.inner.should_warn = 123  #@
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'complexfield_pb2.Outer')
+            node=node.targets[0], args=('should_warn', 'complexfield_pb2.Inner')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())

@@ -10,12 +10,12 @@ class _Descriptor(object):
 
 _FOO = _Descriptor(
     name='Foo',
-    fields=[_FieldDescriptor(name='valid_field')],
+    fields=[_FieldDescriptor(name='valid_field', type=9)],
 )
 
 _BAR = _Descriptor(
     name='Bar',
-    fields=[_FieldDescriptor(name='valid_field')],
+    fields=[_FieldDescriptor(name='valid_field', type=9)],
 )
 
 Foo = type('Foo', (object, ), {'DESCRIPTOR': _FOO})

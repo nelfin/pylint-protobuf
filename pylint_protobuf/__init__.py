@@ -1,3 +1,12 @@
+from typing import (
+    Any,
+    Union,
+    List,
+    Dict,
+    TypeVar,
+    Optional,
+)
+
 import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
@@ -68,10 +77,60 @@ def _slice(subscript):
         return None
 
 
-class TypeClass(object):
-    __slots__ = ('t',)
+class Field(object):
+    pass
 
-    def __init__(self, t):
+
+F = TypeVar('F', bound=Field)
+
+
+class AttrSpec(object):
+    __slots__ = ('fields',)
+
+    def __init__(self, fields):
+        # type: (Dict[str, F]) -> None
+        self.fields = fields
+
+    def getattr(self, var):
+        # type: (str) -> Optional[F]
+        return self.fields.get(var)
+
+
+class SimpleField(Field):
+    __slots__ = ('name',)
+
+    def __init__(self, name):
+        self.name = name
+
+
+class ComplexField(Field):
+    __slots__ = ('name', 'attrspec',)
+
+    def __init__(self, name, attrspec):
+        self.name = name
+        self.attrspec = attrspec
+
+    def getattr(self, field):
+        self.attrspec.getattr(field)
+
+
+def field_type(spec, fields):
+    # type: (AttrSpec, List[str]) -> Optional[F]
+    if not fields:
+        return None
+    f = fields[0]
+    if len(fields) == 1:
+        return spec.getattr(f)
+    g = spec.getattr(f)
+    assert isinstance(g, ComplexField)
+    return field_type(g.attrspec, fields[1:])
+
+
+class TypeClass(object):
+    __slots__ = ('name', 't',)
+
+    def __init__(self, name, t):
+        self.name = name
         self.t = t
 
 
@@ -103,12 +162,14 @@ class Module(object):
 
 
 def _typeof(scope, node):
+    # type: (...) -> Any
     """
     typeof ::
         scope : Name -> Maybe[Type]
         node : Node
         -> Maybe[Type]
     """
+    print('_typeof: {}'.format(node))
     if isinstance(node, (astroid.Name, astroid.AssignName)):
         return scope.get(node.name)
     elif isinstance(node, astroid.Subscript):
@@ -122,11 +183,18 @@ def _typeof(scope, node):
     elif isinstance(node, astroid.Attribute):
         try:
             module = scope.get(node.expr.name)
-            attr = module.getattr(node.attrname)
-            return _typeof(scope, attr)
         except AttributeError:
             return None
-    elif isinstance(node, TypeClass):
+        try:
+            attr = module.getattr(node.attrname)
+        except AttributeError:
+            # import pdb; pdb.set_trace()
+            return None
+        else:
+            return _typeof(scope, attr)
+    elif isinstance(node, (TypeClass, ClassDef)):
+        return node
+    elif isinstance(node, ClassDef):
         return node
     else:
         if node is None:
@@ -159,12 +227,16 @@ def _assignattr(scope, type_fields, node, _):
         rhs : Node
         -> Bool, [Warning]
     """
+    del type_fields  # XXX
+    print('_assignattr: {}'.format(node.as_string()))
     assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
     expr, attr = node.expr, node.attrname
+    # import pdb; pdb.set_trace()
     expr_type = _typeof(scope, expr)
-    if expr_type is None or isinstance(expr_type, Module):
+    if expr_type is None or isinstance(expr_type, (Module, ClassDef)):
+        # import pdb; pdb.set_trace()
         return True, []  # not something we're tracking?
-    fields = type_fields.get(expr_type)
+    fields = expr_type.fields  # type_fields.get(expr_type)
     if fields is None:
         # assert False, "type fields missing for {!r}".format(expr_type)
         return False, []
@@ -210,6 +282,22 @@ def visit_attribute(scope, type_fields, node):
     return messages, suppressions
 
 
+def _build_field(call):
+    fields = {}
+    type_ = -1
+    for kw in call.keywords:
+        if kw.arg == 'name':
+            value = getattr(kw.value, 'value', None)
+            if value is not None:
+                # FIXME: fields.append(value)
+                fields[value] = ClassDef([])  # TODO
+        if kw.arg == 'type':
+            value = getattr(kw.value, 'value', None)
+            if value is not None:
+                type_ = value
+    return list(fields)[0], type_  # FIXME
+
+
 def _parse_fields(iterable):
     """
     Lift field names from keyword arguments to descriptor_pb2.FieldDescriptor.
@@ -217,15 +305,15 @@ def _parse_fields(iterable):
     >>> _parse_fields([FieldDescriptor(name='a'), FieldDescriptor(name='b')])
     ['a', 'b']
     """
-    fields = []
+    fields = {}
     for call in iterable:
         if not isinstance(call, astroid.Call):
             return None
-        for kw in call.keywords:
-            if kw.arg == 'name':
-                value = getattr(kw.value, 'value', None)
-                if value is not None:
-                    fields.append(value)
+        name, type_ = _build_field(call)
+        if type_ == 11:  # FIXME
+            fields[name] = ClassDef([])
+        else:
+            fields[name] = 123
     return fields
 
 
@@ -318,9 +406,11 @@ def _do_import(node, module_name, scope, type_fields):
             # FIXME: multiple nodes, renamings?
             fields = _extract_fields(nodes[0], mod.globals)
             if fields is not None:
+                print(fields)
                 imported_name = qualified_name(original_name)
                 new_fields[imported_name] = fields
-                new_names[imported_name] = TypeClass(imported_name)
+                cls = ClassDef(fields)
+                new_names[imported_name] = TypeClass(imported_name, cls)
 
     new_scope[module_name] = Module(module_name, new_names)
     for name, alias in imported_names:  # check aliasing for ImportFrom
