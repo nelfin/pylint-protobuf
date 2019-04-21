@@ -154,19 +154,19 @@ def _assignattr(scope, type_fields, node, _):
         type_fields : Type -> [str]
         node : AssignAttr
         rhs : Node
-        -> [Warning]
+        -> Bool, [Warning]
     """
-    assert isinstance(node, astroid.AssignAttr)
+    assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
     expr, attr = node.expr, node.attrname
     expr_type = _typeof(scope, expr)
-    if expr_type is None:
-        return []  # not something we're tracking?
+    if expr_type is None or isinstance(expr_type, Module):
+        return True, []  # not something we're tracking?
     fields = type_fields.get(expr_type)
     if fields is None:
         assert False, "type fields missing for {!r}".format(expr_type)
     if attr not in fields:
-        return [('protobuf-undefined-attribute', (attr, expr_type), node)]
-    return []
+        return False, [('protobuf-undefined-attribute', (attr, expr_type), node)]
+    return False, []
 
 
 def visit_assign_node(scope, type_fields, node):
@@ -186,14 +186,23 @@ def visit_assign_node(scope, type_fields, node):
             # already in scope
             new_scope.update(_assign(old_scope, target, value))
         elif isinstance(target, astroid.AssignAttr):
-            messages.extend(_assignattr(old_scope, type_fields, target, value))
+            skip, m = _assignattr(old_scope, type_fields, target, value)
+            if not skip:
+                messages.extend(m)
         else:
             assert False, "unexpected case like Subscript, tuple-unpacking etc."
     return new_scope, messages
 
 
-def visit_getattr(scope, type_fields, node):
-    assert False, "TODO"
+def visit_attribute(scope, type_fields, node):
+    assert isinstance(node, astroid.Attribute)
+    skip, messages = _assignattr(scope, type_fields, node, None)
+    if skip:
+        return [], []
+    suppressions = []
+    if not messages:
+        suppressions.append(node)
+    return messages, suppressions
 
 
 def _parse_fields(iterable):
@@ -382,6 +391,7 @@ class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
     msgs = MESSAGES
     name = 'protobuf-descriptor-checker'
+    priority = 0  # need to be higher than builtin typecheck lint
 
     def __init__(self, linter):
         self.linter = linter
@@ -437,8 +447,20 @@ class ProtobufDescriptorChecker(BaseChecker):
     def visit_delattr(self, node):
         pass
 
+    @utils.check_messages('protobuf-undefined-attribute')
     def visit_attribute(self, node):
-        pass
+        messages, suppressions = visit_attribute(self._scope, self._type_fields, node)
+        for code, args, target in messages:
+            self.add_message(code, args=args, node=target)
+            self._disable('no-member', target.lineno)
+        for target in suppressions:
+            self._disable('no-member', target.lineno)
+
+    def _disable(self, msgid, line, scope='module'):
+        try:
+            self.linter.disable(msgid, scope=scope, line=line)
+        except AttributeError:
+            pass  # might be UnittestLinter
 
 
 def register(linter):

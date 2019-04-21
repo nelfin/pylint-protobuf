@@ -35,10 +35,10 @@ def linter_factory():
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXPECTED_MSGS = [
     pylint_protobuf.MESSAGES['E5901'][0] % ('should_warn', 'person_pb2.Person'),
+    "Instance of 'Foo' has no 'renamed_should_warn' member",
 ]
 
 
-@pytest.mark.xfail(reason='unimplemented')
 def test_no_E1101_on_protobuf_classes(linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
