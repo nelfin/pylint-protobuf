@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.3]
+## [0.3] - 2019-05-24
 - Refactor of parsing internals to cover more edge cases
 - Fixes for multiple aliases of the same name in "from .. import" clauses
 - Fix issue #2: suppression of no-member for protobuf classes, thanks
