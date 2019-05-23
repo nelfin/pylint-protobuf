@@ -163,7 +163,8 @@ def _assignattr(scope, type_fields, node, _):
         return True, []  # not something we're tracking?
     fields = type_fields.get(expr_type)
     if fields is None:
-        assert False, "type fields missing for {!r}".format(expr_type)
+        # assert False, "type fields missing for {!r}".format(expr_type)
+        return False, []
     if attr not in fields:
         return False, [('protobuf-undefined-attribute', (attr, expr_type), node)]
     return False, []
@@ -190,7 +191,8 @@ def visit_assign_node(scope, type_fields, node):
             if not skip:
                 messages.extend(m)
         else:
-            assert False, "unexpected case like Subscript, tuple-unpacking etc."
+            # assert False, "unexpected case like Subscript, tuple-unpacking etc."
+            return old_scope, []  # TODO
     return new_scope, messages
 
 
