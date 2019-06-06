@@ -41,8 +41,11 @@ def _slice(subscript):
         -> Maybe[Node]
     """
     value, idx = subscript.value, subscript.slice
-    indexable = next(value.infer())
-    index = next(idx.infer())
+    try:
+        indexable = next(value.infer())
+        index = next(idx.infer())
+    except astroid.exceptions.InferenceError:
+        return None
     if indexable is astroid.Uninferable or index is astroid.Uninferable:
         return None
     if not isinstance(index, astroid.Const):

@@ -504,3 +504,12 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         # assert fields[Person] == ['foo', 'bar']
         assert 'module_pb2.Person' in fields
         assert fields['module_pb2.Person'] == ['valid_field']
+
+    def test_issue5_inferenceerror_should_not_propagate(self):
+        node = astroid.extract_node("""
+        foo = 'bar/baz'.split('/')[-1]
+        """)
+        try:
+            self.walk(node.root())
+        except astroid.exceptions.InferenceError:
+            pytest.fail("InferenceError should not propagate")
