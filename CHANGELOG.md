@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [Unreleased]
+- Add fix for unhandled InferenceError when slicing Call nodes (#5), thanks
+  @jckegelman for the report and the test case
+
 ## [0.3] - 2019-05-24
 - Refactor of parsing internals to cover more edge cases
 - Fixes for multiple aliases of the same name in "from .. import" clauses
