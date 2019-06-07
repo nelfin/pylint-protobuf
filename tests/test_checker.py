@@ -512,3 +512,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
             self.walk(node.root())
         except astroid.exceptions.InferenceError:
             pytest.fail("InferenceError should not propagate")
+
+    def test_issue6_importing_a_missing_module(self):
+        node = astroid.extract_node('import missing_module_pb2')
+        self.walk(node.root())

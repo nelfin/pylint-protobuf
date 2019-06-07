@@ -295,10 +295,8 @@ def _do_import(node, module_name, scope, type_fields):
     del type_fields, scope
     try:
         mod = node.do_import_module(module_name)
-    except astroid.TooManyLevelsError:
-        return
-    except astroid.AstroidBuildingException:
-        return  # TODO: warn about not being able to import?
+    except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
+        return new_scope, new_fields  # TODO: warn about not being able to import?
 
     imported_names = []
     if isinstance(node, astroid.ImportFrom):
