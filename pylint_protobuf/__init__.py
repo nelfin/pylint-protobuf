@@ -342,49 +342,6 @@ def import_(node, modname, scope, type_fields):
     return new_scope, new_fields
 
 
-def _try_infer_subscript(node):
-    r"""
-    Assumed structure is now:
-    <target> = <exp>[<index>]()
-               ^ .value
-                     ^ .slice
-               \____________/ <- .call.func
-
-    Here, :param:`node` equals the .func of Call
-    """
-    value, idx = node.value, node.slice
-    indexable = next(value.infer())
-    index = next(idx.infer())
-    if indexable is astroid.Uninferable or index is astroid.Uninferable:
-        return None
-    if not isinstance(index, astroid.Const):
-        return None
-    i = index.value
-    if hasattr(indexable, 'elts'):  # looks like astroid.List
-        mapping = indexable.elts
-    elif hasattr(indexable, 'items'):  # looks like astroid.Dict
-        try:
-            mapping = {
-                next(k.infer()).value: v for k, v in indexable.items
-            }
-        except AttributeError:
-            mapping = {}  # unable to infer constant key values for lookup
-    else:
-        return None
-    try:
-        name = mapping[i]
-    except (TypeError, KeyError):
-        # no such luck
-        return None
-    else:
-        # Hopefully `name` refers to eithar a ClassDef or an imported Name from
-        # a protobuf-generated module which we can match up with `well_known`
-        # names
-        if not isinstance(name, astroid.Name):
-            return None
-        return name.name
-
-
 def issubset(left, right):
     """A subset relation for dictionaries"""
     return set(left.keys()) <= set(right.keys())
