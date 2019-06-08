@@ -516,3 +516,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     def test_issue6_importing_a_missing_module(self):
         node = astroid.extract_node('import missing_module_pb2')
         self.walk(node.root())
+
+    def test_issue6_importing_a_missing_module_as_alias(self):
+        node = astroid.extract_node('import missing_module_pb2 as foo')
+        self.walk(node.root())

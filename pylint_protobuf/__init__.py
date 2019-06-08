@@ -379,7 +379,9 @@ class ProtobufDescriptorChecker(BaseChecker):
         new_scope, new_fields = import_(node, modname, self._scope, self._type_fields)
         assert issubset(self._scope, new_scope)
         assert issubset(self._type_fields, new_fields)
-        if alias is not None:
+        if alias is not None and modname in new_scope:
+            # modname not in new_scope implies that the module was not
+            # successfully imported
             diff = new_scope[modname]
             del new_scope[modname]
             new_scope[alias] = diff
