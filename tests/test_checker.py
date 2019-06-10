@@ -539,3 +539,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         bar = foo[0]  #@
         """)
         self.walk(node.root())
+
+    def test_lookup_on_nonetype_should_not_raise(self):
+        node = astroid.extract_node('foo = None[0]')
+        self.walk(node.root())

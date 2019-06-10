@@ -58,7 +58,7 @@ def _slice(subscript):
             mapping = {
                 next(k.infer()).value: v for k, v in indexable.items
             }
-        except AttributeError:
+        except (AttributeError, TypeError):
             mapping = {}  # unable to infer constant key values for lookup
     else:
         return None
