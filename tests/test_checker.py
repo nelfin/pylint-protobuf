@@ -520,3 +520,22 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     def test_issue6_importing_a_missing_module_as_alias(self):
         node = astroid.extract_node('import missing_module_pb2 as foo')
         self.walk(node.root())
+
+    def test_issue7_indexerror_on_slice_inference(self):
+        node = astroid.extract_node("""
+        foo = []
+        bar = foo[0]  #@
+        """)
+        self.walk(node.root())
+
+    @pytest.mark.skip(reason='probably should be Uninferable')
+    def test_issue7_indexerror_on_correct_slice_inference(self):
+        # TODO: this shouldn't raise IndexError, like above, but the value of
+        # bar could be correctly inferred unlike above. Should we do this, and
+        # where should we draw the line on what is too complex to infer?
+        node = astroid.extract_node("""
+        foo = []
+        foo.append(123)
+        bar = foo[0]  #@
+        """)
+        self.walk(node.root())

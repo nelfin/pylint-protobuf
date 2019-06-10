@@ -64,7 +64,7 @@ def _slice(subscript):
         return None
     try:
         return mapping[i]
-    except (TypeError, KeyError):
+    except (TypeError, KeyError, IndexError):
         return None
 
 
