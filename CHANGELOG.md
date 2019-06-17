@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [Unreleased]
+## [0.4] - 2019-06-17
 - Add fix for unhandled InferenceError when slicing Call nodes (#5)
 - Add fix for TypeError raised when attempting to import missing modules (#6)
 - Add fix for IndexError raised when inferring a slice out of range (#7)
