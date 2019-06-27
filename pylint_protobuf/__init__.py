@@ -12,7 +12,7 @@ MESSAGES = {
         'accessed'
     ),
 }
-PROTOBUF_IMPLICIT_ATTRS = [  # TODO: use these
+PROTOBUF_IMPLICIT_ATTRS = [
     'ByteSize',
     'Clear',
     'ClearExtension',
@@ -168,7 +168,7 @@ def _assignattr(scope, type_fields, node, _):
     if fields is None:
         # assert False, "type fields missing for {!r}".format(expr_type)
         return False, []
-    if attr not in fields:
+    if attr not in fields and attr not in PROTOBUF_IMPLICIT_ATTRS:
         return False, [('protobuf-undefined-attribute', (attr, expr_type), node)]
     return False, []
 
