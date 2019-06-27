@@ -7,6 +7,8 @@ import pylint.testutils
 
 import pylint_protobuf
 
+from hypothesis import given, strategies as st
+
 
 class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
@@ -543,3 +545,13 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     def test_lookup_on_nonetype_should_not_raise(self):
         node = astroid.extract_node('foo = None[0]')
         self.walk(node.root())
+
+    @given(st.sampled_from(pylint_protobuf.PROTOBUF_IMPLICIT_ATTRS))
+    def test_implicit_attrs_issue8(self, attr):
+        node = astroid.extract_node("""
+        from person_pb2 import Person
+        p = Person()
+        print(p.{})
+        """.format(attr))
+        with self.assertNoMessages():
+            self.walk(node.root())
