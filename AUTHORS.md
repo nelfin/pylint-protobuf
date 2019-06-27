@@ -7,3 +7,4 @@ Contributors
 ============
 
 * [@TimKingNF](https://github.com/TimKingNF)
+* [@seanwarren](https://github.com/seanwarren)

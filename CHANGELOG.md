@@ -1,5 +1,10 @@
 # pylint-protobuf
 
+## [0.5] - 2019-06-27
+- Add fix for missing attributes defined by protobuf superclasses.
+  Thanks @seanwarren for reminding me of this (and @TimKingNF for the
+  initial fix!)
+
 ## [0.4] - 2019-06-17
 - Add fix for unhandled InferenceError when slicing Call nodes (#5)
 - Add fix for TypeError raised when attempting to import missing modules (#6)
