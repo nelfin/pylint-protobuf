@@ -374,7 +374,7 @@ def _do_import(node, module_name, scope, _):
     try:
         mod = node.do_import_module(module_name)
     except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
-        return new_scope, {}  # TODO: warn about not being able to import?
+        return new_scope  # TODO: warn about not being able to import?
 
     inner_fields = find_fields_by_name(mod)
     find_message_types_by_name(mod)
@@ -410,7 +410,7 @@ def _do_import(node, module_name, scope, _):
         if alias is None:
             alias = name
         new_scope[alias] = new_names[qualified_name(name)]
-    return new_scope, {}
+    return new_scope
 
 
 def import_(node, modname, scope):
@@ -421,7 +421,7 @@ def import_(node, modname, scope):
         node : Import | ImportFrom
         -> (scope' : Name -> Maybe[Type], type_fields': Type -> [str])
     """
-    new_scope, _ = _do_import(node, modname, scope, {})
+    new_scope = _do_import(node, modname, scope, {})
     return new_scope, {}
 
 
@@ -439,15 +439,12 @@ class ProtobufDescriptorChecker(BaseChecker):
     def __init__(self, linter):
         self.linter = linter
         self._scope = None
-        self._type_fields = None
 
     def visit_module(self, _):
         self._scope = {}
-        self._type_fields = {}
 
     def leave_module(self, _):
         self._scope = {}
-        self._type_fields = {}
 
     def visit_import(self, node):
         for modname, alias in node.names:
@@ -459,9 +456,8 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _import_node(self, node, modname, alias=None):
         if not modname.endswith('_pb2'):
             return
-        new_scope, new_fields = import_(node, modname, self._scope)
+        new_scope, _ = import_(node, modname, self._scope)
         assert issubset(self._scope, new_scope)
-        assert issubset(self._type_fields, new_fields)
         if alias is not None and modname in new_scope:
             # modname not in new_scope implies that the module was not
             # successfully imported
@@ -469,7 +465,6 @@ class ProtobufDescriptorChecker(BaseChecker):
             del new_scope[modname]
             new_scope[alias] = diff
         self._scope = new_scope
-        self._type_fields = new_fields
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_annassign(self, node):
