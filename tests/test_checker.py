@@ -498,12 +498,11 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         modname = node.names[0][0]
         scope, fields = pylint_protobuf.import_(node, modname, scope, fields)
         assert 'module_pb2' in scope
-        # assert 'module_pb2.Person' in scope
-        # Person = scope['module_pb2.Person']
-        # assert fields[Person] == ['foo', 'bar']
-        assert 'module_pb2.Person' in fields
-        assert len(fields['module_pb2.Person']) == 1
-        assert 'valid_field' in fields['module_pb2.Person']
+        mod = scope['module_pb2']
+        typeclass = mod.getattr('Person')
+        class_def = typeclass.t
+        assert len(class_def.fields) == 1
+        assert 'valid_field' in class_def.fields
 
     def test_issue5_inferenceerror_should_not_propagate(self):
         node = astroid.extract_node("""
