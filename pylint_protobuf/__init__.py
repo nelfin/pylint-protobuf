@@ -182,7 +182,7 @@ def _assign(scope, target, rhs):
     return new_scope
 
 
-def _assignattr(scope, _, node, __):
+def _assignattr(scope, node):
     """
     assignattr ::
         scope : Name -> Maybe[Type]
@@ -223,7 +223,7 @@ def visit_assign_node(scope, node):
             # already in scope
             new_scope.update(_assign(old_scope, target, value))
         elif isinstance(target, astroid.AssignAttr):
-            skip, m = _assignattr(old_scope, None, target, value)
+            skip, m = _assignattr(old_scope, target)
             if not skip:
                 messages.extend(m)
         else:
@@ -234,7 +234,7 @@ def visit_assign_node(scope, node):
 
 def visit_attribute(scope, node):
     assert isinstance(node, astroid.Attribute)
-    skip, messages = _assignattr(scope, None, node, None)
+    skip, messages = _assignattr(scope, node)
     if skip:
         return [], []
     suppressions = []
