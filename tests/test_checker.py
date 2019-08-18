@@ -452,33 +452,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         node = astroid.extract_node('module_pb2.Person')
         assert pylint_protobuf._typeof(scope, node) is Person
 
-    @pytest.mark.skip(reason='API change')
-    def test_new_typeof_wacky_import(self):
-        Person = pylint_protobuf.TypeClass(object())
-        Rando = pylint_protobuf.TypeClass(object())
-        scope = {
-            'mod': pylint_protobuf.Module,
-            'other': pylint_protobuf.Module,
-            'mod.child': pylint_protobuf.Module,
-            'mod.child.Person': Person,
-            'other.child': pylint_protobuf.Module,
-            'other.child.Person': Rando,
-        }
-        node = astroid.extract_node('mod.child.Person')
-        assert pylint_protobuf._typeof(scope, node) is Person
-
-    @pytest.mark.skip(reason='API change')
-    def test_new_typeof_module_factory_import(self):
-        Factory = object()
-        Person = object()
-        scope = {
-            'factory': Factory,
-            'factory.mod': pylint_protobuf.Module,
-            'factory.mod.Person': Person,
-        }
-        node = astroid.extract_node('factory.mod.Person')
-        assert pylint_protobuf._typeof(scope, node) is Person
-
     def test_new_import(self, tmpdir, monkeypatch):
         monkeypatch.syspath_prepend(tmpdir)
         p = tmpdir.join('module_pb2.py')
