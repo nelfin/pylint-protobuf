@@ -1,7 +1,7 @@
 import os.path
 from setuptools import setup, find_packages
 
-__version__ = '0.5'
+__version__ = '0.6.dev1'
 
 description = (
     'A plugin for making Pylint aware of the fields of protobuf-generated '

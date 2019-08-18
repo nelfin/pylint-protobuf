@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## [Unreleased]
+- Add fix for nested messages not triggering warnings (#4)
+
 ## [0.5] - 2019-06-27
 - Add fix for missing attributes defined by protobuf superclasses.
   Thanks @seanwarren for reminding me of this (and @TimKingNF for the
