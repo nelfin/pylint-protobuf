@@ -232,7 +232,7 @@ def visit_assign_node(scope, node):
     return new_scope, messages
 
 
-def visit_attribute(scope, _, node):
+def visit_attribute(scope, node):
     assert isinstance(node, astroid.Attribute)
     skip, messages = _assignattr(scope, None, node, None)
     if skip:
@@ -496,7 +496,7 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_attribute(self, node):
-        messages, suppressions = visit_attribute(self._scope, None, node)
+        messages, suppressions = visit_attribute(self._scope, node)
         for code, args, target in messages:
             self.add_message(code, args=args, node=target)
             self._disable('no-member', target.lineno)
