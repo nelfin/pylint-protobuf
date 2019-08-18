@@ -1,12 +1,4 @@
 from collections import defaultdict
-from typing import (
-    Any,
-    Union,
-    List,
-    Dict,
-    TypeVar,
-    Optional,
-)
 
 import astroid
 from pylint.checkers import BaseChecker, utils
@@ -82,14 +74,7 @@ def _slice(subscript):
         return None
 
 
-class Field(object):
-    pass
-
-
-F = TypeVar('F', bound=Field)
-
-
-class SimpleField(Field):
+class SimpleField(object):
     __slots__ = ('name',)
 
     def __init__(self, name):
@@ -144,14 +129,12 @@ class Module(object):
 
 
 def _typeof(scope, node):
-    # type: (...) -> Any
     """
     typeof ::
         scope : Name -> Maybe[Type]
         node : Node
         -> Maybe[Type]
     """
-    print('_typeof: {}'.format(node))
     if isinstance(node, (astroid.Name, astroid.AssignName)):
         return scope.get(node.name)
     elif isinstance(node, astroid.Subscript):
@@ -172,7 +155,6 @@ def _typeof(scope, node):
         try:
             attr = namespace.getattr(node.attrname)
         except AttributeError:
-            # import pdb; pdb.set_trace()
             return None
         else:
             return _typeof(scope, attr)
@@ -210,12 +192,10 @@ def _assignattr(scope, type_fields, node, _):
         -> Bool, [Warning]
     """
     del type_fields  # XXX
-    print('_assignattr: {}'.format(node.as_string()))
     assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
     expr, attr = node.expr, node.attrname
     expr_type = _typeof(scope, expr)
     if expr_type is None or isinstance(expr_type, Module):
-        # import pdb; pdb.set_trace()
         return True, []  # not something we're tracking?
     # assert isinstance(expr_type, ClassInstance)
     fields = expr_type.fields  # ClassDef
@@ -425,8 +405,6 @@ def _do_import(node, module_name, scope, type_fields):
             imported_name = qualified_name(original_name)
             fields = _extract_fields(nodes[0], mod.globals, inner_fields, imported_name)
             if fields is not None:
-                print(('fields', fields))
-                # imported_name = qualified_name(original_name)
                 new_fields[imported_name] = fields
                 cls = ClassDef(fields, imported_name)
                 new_names[imported_name] = TypeClass(cls)
