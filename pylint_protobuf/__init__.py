@@ -367,15 +367,14 @@ def find_message_types_by_name(mod_node):
     pass
 
 
-def _do_import(node, module_name, scope, type_fields):
+def _do_import(node, module_name, scope, _):
     assert isinstance(node, (astroid.Import, astroid.ImportFrom))
     new_scope = scope.copy()
-    new_fields = type_fields.copy()
-    del type_fields, scope
+    del scope
     try:
         mod = node.do_import_module(module_name)
     except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
-        return new_scope, new_fields  # TODO: warn about not being able to import?
+        return new_scope, {}  # TODO: warn about not being able to import?
 
     inner_fields = find_fields_by_name(mod)
     find_message_types_by_name(mod)
@@ -403,7 +402,6 @@ def _do_import(node, module_name, scope, type_fields):
             imported_name = qualified_name(original_name)
             fields = _extract_fields(nodes[0], mod.globals, inner_fields, imported_name)
             if fields is not None:
-                new_fields[imported_name] = fields
                 cls = ClassDef(fields, imported_name)
                 new_names[imported_name] = TypeClass(cls)
 
@@ -412,10 +410,10 @@ def _do_import(node, module_name, scope, type_fields):
         if alias is None:
             alias = name
         new_scope[alias] = new_names[qualified_name(name)]
-    return new_scope, new_fields
+    return new_scope, {}
 
 
-def import_(node, modname, scope, type_fields):
+def import_(node, modname, scope):
     """
     import ::
         scope : Name -> Maybe[Type]
@@ -423,8 +421,8 @@ def import_(node, modname, scope, type_fields):
         node : Import | ImportFrom
         -> (scope' : Name -> Maybe[Type], type_fields': Type -> [str])
     """
-    new_scope, new_fields = _do_import(node, modname, scope, type_fields)
-    return new_scope, new_fields
+    new_scope, _ = _do_import(node, modname, scope, {})
+    return new_scope, {}
 
 
 def issubset(left, right):
@@ -461,7 +459,7 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _import_node(self, node, modname, alias=None):
         if not modname.endswith('_pb2'):
             return
-        new_scope, new_fields = import_(node, modname, self._scope, self._type_fields)
+        new_scope, new_fields = import_(node, modname, self._scope)
         assert issubset(self._scope, new_scope)
         assert issubset(self._type_fields, new_fields)
         if alias is not None and modname in new_scope:

@@ -493,10 +493,10 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         )
         Person = type('Person', (object, ), {'DESCRIPTOR': _PERSON})
         """))
-        scope, fields = {}, {}
+        scope = {}
         node = astroid.extract_node('import module_pb2')
         modname = node.names[0][0]
-        scope, fields = pylint_protobuf.import_(node, modname, scope, fields)
+        scope, _ = pylint_protobuf.import_(node, modname, scope)
         assert 'module_pb2' in scope
         mod = scope['module_pb2']
         typeclass = mod.getattr('Person')
