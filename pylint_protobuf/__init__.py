@@ -186,9 +186,7 @@ def _assignattr(scope, node):
     """
     assignattr ::
         scope : Name -> Maybe[Type]
-        type_fields : Type -> [str]
         node : AssignAttr
-        rhs : Node
         -> Bool, [Warning]
     """
     assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
@@ -367,7 +365,13 @@ def find_message_types_by_name(mod_node):
     pass
 
 
-def _do_import(node, module_name, scope, _):
+def import_(node, module_name, scope):
+    """
+    import ::
+        scope : Name -> Maybe[Type]
+        node : Import | ImportFrom
+        -> (scope' : Name -> Maybe[Type])
+    """
     assert isinstance(node, (astroid.Import, astroid.ImportFrom))
     new_scope = scope.copy()
     del scope
@@ -413,18 +417,6 @@ def _do_import(node, module_name, scope, _):
     return new_scope
 
 
-def import_(node, modname, scope):
-    """
-    import ::
-        scope : Name -> Maybe[Type]
-        type_fields : Type -> [str]
-        node : Import | ImportFrom
-        -> (scope' : Name -> Maybe[Type], type_fields': Type -> [str])
-    """
-    new_scope = _do_import(node, modname, scope, {})
-    return new_scope, {}
-
-
 def issubset(left, right):
     """A subset relation for dictionaries"""
     return set(left.keys()) <= set(right.keys())
@@ -456,7 +448,7 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _import_node(self, node, modname, alias=None):
         if not modname.endswith('_pb2'):
             return
-        new_scope, _ = import_(node, modname, self._scope)
+        new_scope = import_(node, modname, self._scope)
         assert issubset(self._scope, new_scope)
         if alias is not None and modname in new_scope:
             # modname not in new_scope implies that the module was not
