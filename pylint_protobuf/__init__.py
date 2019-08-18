@@ -106,10 +106,9 @@ class ClassDef(object):  # XXX
 
 
 class TypeClass(object):
-    __slots__ = ('name', 't',)
+    __slots__ = ('t',)
 
-    def __init__(self, name, t):
-        self.name = name
+    def __init__(self, t):
         self.t = t
 
     def instance(self):
@@ -430,7 +429,7 @@ def _do_import(node, module_name, scope, type_fields):
                 # imported_name = qualified_name(original_name)
                 new_fields[imported_name] = fields
                 cls = ClassDef(fields, imported_name)
-                new_names[imported_name] = TypeClass(imported_name, cls)
+                new_names[imported_name] = TypeClass(cls)
 
     new_scope[module_name] = Module(module_name, new_names)
     for name, alias in imported_names:  # check aliasing for ImportFrom
