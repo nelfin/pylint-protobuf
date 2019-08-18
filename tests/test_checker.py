@@ -435,7 +435,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         assert scope['a'] is Person
 
     def test_new_assignattr(self):
-        Person = object()
+        Person = pylint_protobuf.ClassDef({}, '')
         type_fields = {Person: ['foo', 'bar']}
         scope = {'a': Person}
         assign = astroid.extract_node("a.should_warn = 123")
