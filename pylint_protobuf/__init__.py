@@ -206,7 +206,7 @@ def _assignattr(scope, _, node, __):
     return False, []
 
 
-def visit_assign_node(scope, _, node):
+def visit_assign_node(scope, node):
     assert isinstance(node, (astroid.Assign, astroid.AnnAssign))
     new_scope, old_scope = scope.copy(), scope.copy()
     del scope
@@ -482,7 +482,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._visit_assign(node)
 
     def _visit_assign(self, node):
-        new_scope, messages = visit_assign_node(self._scope, None, node)
+        new_scope, messages = visit_assign_node(self._scope, node)
         assert issubset(self._scope, new_scope)
         self._scope = new_scope
         for code, args, target in messages:

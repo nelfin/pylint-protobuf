@@ -430,7 +430,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         Person = object()
         scope = {'Person': Person}
         assign = astroid.extract_node("a = Person")
-        scope, _ = pylint_protobuf.visit_assign_node(scope, {}, assign)
+        scope, _ = pylint_protobuf.visit_assign_node(scope, assign)
         assert 'a' in scope
         assert scope['a'] is Person
 
@@ -438,7 +438,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         Person = pylint_protobuf.ClassDef({}, '')
         scope = {'a': Person}
         assign = astroid.extract_node("a.should_warn = 123")
-        _, messages = pylint_protobuf.visit_assign_node(scope, None, assign)
+        _, messages = pylint_protobuf.visit_assign_node(scope, assign)
         assert len(messages) == 1
         msg, _, node = messages[0]
         assert msg == 'protobuf-undefined-attribute'
