@@ -182,7 +182,7 @@ def _assign(scope, target, rhs):
     return new_scope
 
 
-def _assignattr(scope, type_fields, node, _):
+def _assignattr(scope, _, node, __):
     """
     assignattr ::
         scope : Name -> Maybe[Type]
@@ -191,13 +191,11 @@ def _assignattr(scope, type_fields, node, _):
         rhs : Node
         -> Bool, [Warning]
     """
-    del type_fields  # XXX
     assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
     expr, attr = node.expr, node.attrname
     expr_type = _typeof(scope, expr)
     if expr_type is None or isinstance(expr_type, Module):
         return True, []  # not something we're tracking?
-    # assert isinstance(expr_type, ClassInstance)
     fields = expr_type.fields  # ClassDef
     if fields is None:
         # assert False, "type fields missing for {!r}".format(expr_type)
@@ -208,7 +206,7 @@ def _assignattr(scope, type_fields, node, _):
     return False, []
 
 
-def visit_assign_node(scope, type_fields, node):
+def visit_assign_node(scope, _, node):
     assert isinstance(node, (astroid.Assign, astroid.AnnAssign))
     new_scope, old_scope = scope.copy(), scope.copy()
     del scope
@@ -225,7 +223,7 @@ def visit_assign_node(scope, type_fields, node):
             # already in scope
             new_scope.update(_assign(old_scope, target, value))
         elif isinstance(target, astroid.AssignAttr):
-            skip, m = _assignattr(old_scope, type_fields, target, value)
+            skip, m = _assignattr(old_scope, None, target, value)
             if not skip:
                 messages.extend(m)
         else:
@@ -234,9 +232,9 @@ def visit_assign_node(scope, type_fields, node):
     return new_scope, messages
 
 
-def visit_attribute(scope, type_fields, node):
+def visit_attribute(scope, _, node):
     assert isinstance(node, astroid.Attribute)
-    skip, messages = _assignattr(scope, type_fields, node, None)
+    skip, messages = _assignattr(scope, None, node, None)
     if skip:
         return [], []
     suppressions = []
@@ -484,7 +482,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._visit_assign(node)
 
     def _visit_assign(self, node):
-        new_scope, messages = visit_assign_node(self._scope, self._type_fields, node)
+        new_scope, messages = visit_assign_node(self._scope, None, node)
         assert issubset(self._scope, new_scope)
         self._scope = new_scope
         for code, args, target in messages:
@@ -498,7 +496,7 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_attribute(self, node):
-        messages, suppressions = visit_attribute(self._scope, self._type_fields, node)
+        messages, suppressions = visit_attribute(self._scope, None, node)
         for code, args, target in messages:
             self.add_message(code, args=args, node=target)
             self._disable('no-member', target.lineno)
