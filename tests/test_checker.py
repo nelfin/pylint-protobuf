@@ -503,7 +503,8 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         # Person = scope['module_pb2.Person']
         # assert fields[Person] == ['foo', 'bar']
         assert 'module_pb2.Person' in fields
-        assert fields['module_pb2.Person'] == ['valid_field']
+        assert len(fields['module_pb2.Person']) == 1
+        assert 'valid_field' in fields['module_pb2.Person']
 
     def test_issue5_inferenceerror_should_not_propagate(self):
         node = astroid.extract_node("""
