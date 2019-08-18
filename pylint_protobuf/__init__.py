@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import (
     Any,
     Union,
@@ -43,6 +44,10 @@ PROTOBUF_IMPLICIT_ATTRS = [
 ]
 
 
+class TypeTags(object):
+    OBJECT = 11
+
+
 def _slice(subscript):
     """
     slice ::
@@ -84,18 +89,6 @@ class Field(object):
 F = TypeVar('F', bound=Field)
 
 
-class AttrSpec(object):
-    __slots__ = ('fields',)
-
-    def __init__(self, fields):
-        # type: (Dict[str, F]) -> None
-        self.fields = fields
-
-    def getattr(self, var):
-        # type: (str) -> Optional[F]
-        return self.fields.get(var)
-
-
 class SimpleField(Field):
     __slots__ = ('name',)
 
@@ -103,27 +96,13 @@ class SimpleField(Field):
         self.name = name
 
 
-class ComplexField(Field):
-    __slots__ = ('name', 'attrspec',)
+class ClassDef(object):  # XXX
+    def __init__(self, fields, qualname):
+        self.fields = fields
+        self.qualname = qualname
 
-    def __init__(self, name, attrspec):
-        self.name = name
-        self.attrspec = attrspec
-
-    def getattr(self, field):
-        self.attrspec.getattr(field)
-
-
-def field_type(spec, fields):
-    # type: (AttrSpec, List[str]) -> Optional[F]
-    if not fields:
-        return None
-    f = fields[0]
-    if len(fields) == 1:
-        return spec.getattr(f)
-    g = spec.getattr(f)
-    assert isinstance(g, ComplexField)
-    return field_type(g.attrspec, fields[1:])
+    def getattr(self, key):
+        return self.fields.get(key)
 
 
 class TypeClass(object):
@@ -132,6 +111,10 @@ class TypeClass(object):
     def __init__(self, name, t):
         self.name = name
         self.t = t
+
+    def instance(self):
+        # TODO: clarify/unify this and ClassDef
+        return self.t
 
 
 def _instanceof(typeclass):
@@ -143,7 +126,7 @@ def _instanceof(typeclass):
     if typeclass is None:
         return None
     assert isinstance(typeclass, TypeClass)
-    return typeclass.t
+    return typeclass.instance()
 
 
 class Module(object):
@@ -182,19 +165,19 @@ def _typeof(scope, node):
         # around _instanceof
     elif isinstance(node, astroid.Attribute):
         try:
-            module = scope.get(node.expr.name)
+            namespace = scope.get(node.expr.name)
         except AttributeError:
             return None
+        # namespace is something like a module or ClassDef that supports
+        # getattr
         try:
-            attr = module.getattr(node.attrname)
+            attr = namespace.getattr(node.attrname)
         except AttributeError:
             # import pdb; pdb.set_trace()
             return None
         else:
             return _typeof(scope, attr)
     elif isinstance(node, (TypeClass, ClassDef)):
-        return node
-    elif isinstance(node, ClassDef):
         return node
     else:
         if node is None:
@@ -231,17 +214,18 @@ def _assignattr(scope, type_fields, node, _):
     print('_assignattr: {}'.format(node.as_string()))
     assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
     expr, attr = node.expr, node.attrname
-    # import pdb; pdb.set_trace()
     expr_type = _typeof(scope, expr)
-    if expr_type is None or isinstance(expr_type, (Module, ClassDef)):
+    if expr_type is None or isinstance(expr_type, Module):
         # import pdb; pdb.set_trace()
         return True, []  # not something we're tracking?
-    fields = expr_type.fields  # type_fields.get(expr_type)
+    # assert isinstance(expr_type, ClassInstance)
+    fields = expr_type.fields  # ClassDef
     if fields is None:
         # assert False, "type fields missing for {!r}".format(expr_type)
         return False, []
     if attr not in fields and attr not in PROTOBUF_IMPLICIT_ATTRS:
-        return False, [('protobuf-undefined-attribute', (attr, expr_type), node)]
+        msg = ('protobuf-undefined-attribute', (attr, expr_type.qualname), node)
+        return False, [msg]
     return False, []
 
 
@@ -283,22 +267,22 @@ def visit_attribute(scope, type_fields, node):
 
 
 def _build_field(call):
-    fields = {}
+    name = ''
     type_ = -1
     for kw in call.keywords:
         if kw.arg == 'name':
             value = getattr(kw.value, 'value', None)
             if value is not None:
-                # FIXME: fields.append(value)
-                fields[value] = ClassDef([])  # TODO
+                name = value
         if kw.arg == 'type':
             value = getattr(kw.value, 'value', None)
             if value is not None:
                 type_ = value
-    return list(fields)[0], type_  # FIXME
+    return name, type_
 
 
-def _parse_fields(iterable):
+def _parse_fields(iterable, inner_fields, qualname):
+    # XXX pass whole field lookup for arbitrary nesting
     """
     Lift field names from keyword arguments to descriptor_pb2.FieldDescriptor.
 
@@ -310,14 +294,17 @@ def _parse_fields(iterable):
         if not isinstance(call, astroid.Call):
             return None
         name, type_ = _build_field(call)
-        if type_ == 11:  # FIXME
-            fields[name] = ClassDef([])
+        if type_ == TypeTags.OBJECT:
+            # XXX: guard against mutually recursive types
+            desc = _parse_descriptor([inner_fields.get(name)], inner_fields, qualname)
+            fully_qualified_name = '{}.{}'.format(qualname, name)
+            fields[name] = ClassDef(desc, fully_qualified_name)
         else:
-            fields[name] = 123
+            fields[name] = SimpleField(name)  # FIXME
     return fields
 
 
-def _parse_descriptor(node):
+def _parse_descriptor(node, candidates, qualname):
     """
     Walk the nodes of a descriptor_pb2.Descriptor to find the fields keyword.
     """
@@ -332,11 +319,11 @@ def _parse_descriptor(node):
         return None
     for kw in call.keywords:
         if kw.arg == 'fields':
-            return _parse_fields(kw.value.itered())
+            return _parse_fields(kw.value.itered(), candidates, qualname)
     return None
 
 
-def _extract_fields(node, module_globals=None):
+def _extract_fields(node, module_globals, inner_fields, qualname):
     """
     Given a "name = type(...)"-style assignment, look up the variable
     corresponding to the protobuf-generated descriptor in the module and parse
@@ -353,11 +340,15 @@ def _extract_fields(node, module_globals=None):
     """
     if module_globals is None:
         module_globals = {}
+    if inner_fields is None:
+        inner_fields = {}
 
     def parse_name(var):
         if not isinstance(var, astroid.Name):
             return None
-        return _parse_descriptor(module_globals.get(var.name))
+        outer_node = module_globals.get(var.name)
+        filtered_fields = inner_fields.get(var.name, {})
+        return _parse_descriptor(outer_node, filtered_fields, qualname)
     if not isinstance(node, astroid.AssignName):
         return None
     call = node.parent.value
@@ -376,6 +367,29 @@ def _extract_fields(node, module_globals=None):
     return None
 
 
+def __x_parse(node):  # XXX
+    outer = node.expr.value.expr.name
+    field = node.expr.slice.value.value
+    inner = node.parent.value.name
+    return outer, field, inner
+
+
+def find_fields_by_name(mod_node):
+    """
+    _SOME_TYPE.fields_by_name['some_field'].message_type = _INNER
+    """
+    candidates = defaultdict(dict)
+    for c in mod_node.nodes_of_class(astroid.AssignAttr):
+        if c.attrname == 'message_type':
+            outer, field, inner = __x_parse(c)
+            candidates[outer][field] = mod_node.getattr(inner)[0]
+    return candidates
+
+
+def find_message_types_by_name(mod_node):
+    pass
+
+
 def _do_import(node, module_name, scope, type_fields):
     assert isinstance(node, (astroid.Import, astroid.ImportFrom))
     new_scope = scope.copy()
@@ -386,15 +400,20 @@ def _do_import(node, module_name, scope, type_fields):
     except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
         return new_scope, new_fields  # TODO: warn about not being able to import?
 
+    inner_fields = find_fields_by_name(mod)
+    find_message_types_by_name(mod)
+
     imported_names = []
     if isinstance(node, astroid.ImportFrom):
         imported_names = node.names
 
     def likely_name(n):
-        if imported_names:
-            # NOTE: only map aliases when mapping names to fields, not when
-            # checking mod.globals (since they haven't been renamed yet).
-            return any(n == name for name, _ in imported_names)
+        # XXX: parse all fields for nested classes
+        #
+        # if imported_names:
+        #     # NOTE: only map aliases when mapping names to fields, not when
+        #     # checking mod.globals (since they haven't been renamed yet).
+        #     return any(n == name for name, _ in imported_names)
         return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR')
 
     def qualified_name(n):
@@ -404,12 +423,13 @@ def _do_import(node, module_name, scope, type_fields):
     for original_name, nodes in mod.globals.items():
         if likely_name(original_name):
             # FIXME: multiple nodes, renamings?
-            fields = _extract_fields(nodes[0], mod.globals)
+            imported_name = qualified_name(original_name)
+            fields = _extract_fields(nodes[0], mod.globals, inner_fields, imported_name)
             if fields is not None:
-                print(fields)
-                imported_name = qualified_name(original_name)
+                print(('fields', fields))
+                # imported_name = qualified_name(original_name)
                 new_fields[imported_name] = fields
-                cls = ClassDef(fields)
+                cls = ClassDef(fields, imported_name)
                 new_names[imported_name] = TypeClass(imported_name, cls)
 
     new_scope[module_name] = Module(module_name, new_names)
