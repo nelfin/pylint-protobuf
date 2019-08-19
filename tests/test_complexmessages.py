@@ -29,3 +29,26 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         """)
         with self.assertNoMessages():
             self.walk(node.root())
+
+    def test_inner_class_no_warnings(self):
+        node = astroid.extract_node("""
+        from fixture.innerclass_pb2 import Person
+        p = Person()
+        p.primary_alias.name = "Example Fakename"  #@
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_inner_class_warns(self):
+        node = astroid.extract_node("""
+        from fixture.innerclass_pb2 import Person
+        p = Person()
+        p.primary_alias.should_warn = 123  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0],
+            args=('should_warn', 'fixture.innerclass_pb2.Person.primary_alias')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
