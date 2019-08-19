@@ -1,3 +1,4 @@
+import pytest
 import astroid
 import pylint.testutils
 
@@ -49,6 +50,21 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'fixture.innerclass_pb2.Person.primary_alias')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unimplemented')
+    def test_mutually_recursive_warns(self):
+        node = astroid.extract_node("""
+        from fixture.mutual_pb2 import A
+        a = A()
+        a.b_mutual.a_mutual.should_warn = 123  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0],
+            args=('should_warn', 'fixture.mutual_pb2.A.b_mutual.a_mutual')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())

@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package test;
+
+message A {
+  required B b_mutual = 1;
+}
+
+message B {
+  required A a_mutual = 1;
+}
