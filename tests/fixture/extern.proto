@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package test;
+
+message Book {
+  message Identifier {
+    required string URI = 1;
+  }
+  required Identifier canonical = 2;
+}
+
+message UserFavourite {
+  required Book.Identifier favourite = 1;
+}

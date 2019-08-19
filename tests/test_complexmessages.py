@@ -68,3 +68,17 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
+
+    def test_external_nested_class_warns(self):
+        node = astroid.extract_node("""
+        from fixture.extern_pb2 import UserFavourite
+        pref = UserFavourite()
+        pref.favourite.should_warn = 123  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0],
+            args=('should_warn', 'fixture.extern_pb2.UserFavourite.favourite')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
