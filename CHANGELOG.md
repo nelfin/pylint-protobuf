@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [Unreleased]
+## [0.6] - 2019-08-19
 - Add fix for non-scalar message fields not triggering warnings (#4)
 - Add fix for nested message types not triggering warnings
 
