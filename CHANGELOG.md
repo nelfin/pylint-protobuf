@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [0.7] - 2019-08-21
+- Add fix for AttributeError raised when checking files using imported message
+  definitions (#9). Thanks @contrivable for the report
+
 ## [0.6] - 2019-08-19
 - Add fix for non-scalar message fields not triggering warnings (#4)
 - Add fix for nested message types not triggering warnings
