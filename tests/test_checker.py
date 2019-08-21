@@ -519,3 +519,17 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         from fixture.import_pb2 import Parent
         """)
         self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unimplemented')
+    def test_issue10_imported_message_warns(self):
+        node = astroid.extract_node("""
+        from fixture.import_pb2 import Parent
+        p = Parent()
+        p.child.should_warn = 123  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node, args=('should_warn', 'fixture.person_pb2.Parent.child')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
