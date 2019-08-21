@@ -514,7 +514,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(raises=AttributeError)
     def test_issue9_imported_message_no_attribute_error(self):
         node = astroid.extract_node("""
         from fixture.import_pb2 import Parent

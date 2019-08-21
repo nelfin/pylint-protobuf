@@ -271,7 +271,10 @@ def _parse_fields(iterable, inner_fields, qualname):
         name, type_ = _build_field(call)
         if type_ == TypeTags.OBJECT:
             # XXX: guard against mutually recursive types
-            desc = _parse_descriptor([inner_fields.get(name)], inner_fields, qualname)
+            try:
+                desc = _parse_descriptor([inner_fields[name]], inner_fields, qualname)
+            except KeyError:
+                continue
             fully_qualified_name = '{}.{}'.format(qualname, name)
             fields[name] = ClassDef(desc, fully_qualified_name)
         else:
@@ -342,11 +345,21 @@ def _extract_fields(node, module_globals, inner_fields, qualname):
     return None
 
 
-def __x_parse(node):  # XXX
-    outer = node.expr.value.expr.name
-    field = node.expr.slice.value.value
-    inner = node.parent.value.name
-    return outer, field, inner
+def _parse_message_type(node):
+    try:
+        outer = node.expr.value.expr.name
+        field = node.expr.slice.value.value
+    except AttributeError:
+        return None
+    try:
+        inner = node.parent.value.name
+    except AttributeError:
+        try:
+            inner = node.parent.value.expr.name
+        except AttributeError:
+            return None
+    else:
+        return outer, field, inner
 
 
 def find_fields_by_name(mod_node):
@@ -356,7 +369,10 @@ def find_fields_by_name(mod_node):
     candidates = defaultdict(dict)
     for c in mod_node.nodes_of_class(astroid.AssignAttr):
         if c.attrname == 'message_type':
-            outer, field, inner = __x_parse(c)
+            message_type = _parse_message_type(c)
+            if message_type is None:
+                continue
+            outer, field, inner = message_type
             candidates[outer][field] = mod_node.getattr(inner)[0]
     return candidates
 
