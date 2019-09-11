@@ -18,5 +18,10 @@ _BAR = _Descriptor(
     fields=[_FieldDescriptor(name='valid_field', type=9)],
 )
 
-Foo = type('Foo', (object, ), {'DESCRIPTOR': _FOO})
-Bar = type('Bar', (object, ), {'DESCRIPTOR': _BAR})
+class __FakeModule:
+    pass
+_reflection = __FakeModule()
+_reflection.GeneratedProtocolMessageType = type
+
+Foo = _reflection.GeneratedProtocolMessageType('Foo', (object, ), {'DESCRIPTOR': _FOO})
+Bar = _reflection.GeneratedProtocolMessageType('Bar', (object, ), {'DESCRIPTOR': _BAR})

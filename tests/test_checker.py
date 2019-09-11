@@ -451,7 +451,11 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
             name='PERSON',
             fields=[_FieldDescriptor(name='valid_field')],
         )
-        Person = type('Person', (object, ), {'DESCRIPTOR': _PERSON})
+        class __FakeModule:
+            pass
+        _reflection = __FakeModule()
+        _reflection.GeneratedProtocolMessageType = type
+        Person = _reflection.GeneratedProtocolMessageType('Person', (object, ), {'DESCRIPTOR': _PERSON})
         """))
         scope = {}
         node = astroid.extract_node('import module_pb2')
