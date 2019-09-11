@@ -491,6 +491,8 @@ def import_(node, module_name, scope):
 
     new_scope[module_name] = Module(module_name, new_names)
     for name, alias in imported_names:  # check aliasing for ImportFrom
+        if name == '*':
+            continue
         if alias is None:
             alias = name
         new_scope[alias] = new_names[qualified_name(name)]
