@@ -24,7 +24,6 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_import_enum_attributes_no_errors(self):
         node = astroid.extract_node("""
         from fixture.enum_pb2 import Variable
@@ -33,21 +32,21 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_import_enum_missing_attributes_warns(self):
         node = astroid.extract_node("""
         from fixture.enum_pb2 import Variable
-        print(Variable.MISSING)  #@
+        print(
+            Variable.should_warn  #@
+        )
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0],  # FIXME: what's the target?
-            args=('should_warn', 'fixture.enum_pb2.MISSING')
+            node=node,
+            args=('should_warn', 'fixture.enum_pb2.Variable')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_import_enum_by_value_no_errors(self):
         node = astroid.extract_node("""
         from fixture.enum_pb2 import Variable

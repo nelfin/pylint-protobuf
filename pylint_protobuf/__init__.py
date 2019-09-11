@@ -37,6 +37,7 @@ PROTOBUF_IMPLICIT_ATTRS = [
 
 
 class TypeTags(object):
+    NONE = -1
     OBJECT = 11
 
 
@@ -194,12 +195,15 @@ def _assignattr(scope, node):
     expr_type = _typeof(scope, expr)
     if expr_type is None or isinstance(expr_type, Module):
         return True, []  # not something we're tracking?
-    fields = expr_type.fields  # ClassDef
+    try:
+        fields, qualname = expr_type.fields, expr_type.qualname  # ClassDef
+    except AttributeError:
+        fields, qualname = expr_type.t.fields, expr_type.t.qualname  # TypeClass
     if fields is None:
         # assert False, "type fields missing for {!r}".format(expr_type)
         return False, []
     if attr not in fields and attr not in PROTOBUF_IMPLICIT_ATTRS:
-        msg = ('protobuf-undefined-attribute', (attr, expr_type.qualname), node)
+        msg = ('protobuf-undefined-attribute', (attr, qualname), node)
         return False, [msg]
     return False, []
 
@@ -277,6 +281,8 @@ def _parse_fields(iterable, inner_fields, qualname):
                 continue
             fully_qualified_name = '{}.{}'.format(qualname, name)
             fields[name] = ClassDef(desc, fully_qualified_name)
+        elif type_ == TypeTags.NONE:  # EnumValueDescriptor?
+            fields[name] = SimpleField(name)
         else:
             fields[name] = SimpleField(name)  # FIXME
     return fields
@@ -298,6 +304,28 @@ def _parse_descriptor(node, candidates, qualname):
     for kw in call.keywords:
         if kw.arg == 'fields':
             return _parse_fields(kw.value.itered(), candidates, qualname)
+    return None
+
+
+def _parse_enum_descriptor(node, candidates, qualname):
+    # TODO: docstring, unify with above
+    """
+    Walk the nodes of a descriptor_pb2.Descriptor to find the fields keyword.
+    """
+    if node is None:
+        return None
+    node = node[0]
+    assignment = node.parent
+    if not isinstance(assignment, astroid.Assign):
+        return None
+    call = assignment.value
+    if not isinstance(call, astroid.Call):
+        return None
+    for kw in call.keywords:
+        if kw.arg == 'values':
+            fields = _parse_fields(kw.value.itered(), candidates, qualname)
+            fields['Value'] = SimpleField('Value')  # implicit
+            return fields
     return None
 
 
@@ -333,7 +361,7 @@ def _extract_fields(node, module_globals, inner_fields, qualname):
     if attr_name == "GeneratedProtocolMessageType":
         return _parse_generated_protocol_message(rhs, module_globals, inner_fields, qualname)
     if attr_name == "EnumTypeWrapper":
-        return _parse_enum_type_wrapper(node, rhs)
+        return _parse_enum_type_wrapper(rhs, module_globals, qualname)
     return None
 
 
@@ -363,8 +391,15 @@ def _parse_generated_protocol_message(call, module_globals, inner_fields, qualna
     return None
 
 
-def _parse_enum_type_wrapper(node, rhs):
-    return {node.name: TypeClass(None)}  # TODO: parse enum descriptor
+def _parse_enum_type_wrapper(rhs, module_globals, qualname):
+    def parse_name(var):
+        if not isinstance(var, astroid.Name):
+            return None
+        outer_node = module_globals.get(var.name)
+        filtered_fields = {}  # FIXME
+        return _parse_enum_descriptor(outer_node, filtered_fields, qualname)
+    enum_descriptor = rhs.args[0]
+    return parse_name(enum_descriptor)
 
 
 def _parse_message_type(node):
