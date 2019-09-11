@@ -54,3 +54,11 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         """)
         with self.assertNoMessages():
             self.walk(node.root())
+
+    def test_star_import_enum_no_errors(self):
+        node = astroid.extract_node("""
+        from fixture.enum_pb2 import *
+        print(DISCRETE)
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())

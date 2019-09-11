@@ -23,6 +23,13 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
+    def test_star_import_no_errors(self):
+        node = astroid.extract_node("""
+        from person_pb2 import *
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
     def test_unaliased_module_happy_path_should_warn(self):
         node = astroid.extract_node("""
         import person_pb2
