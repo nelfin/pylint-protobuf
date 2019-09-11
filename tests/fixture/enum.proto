@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package test;
+
+enum Variable {
+  CONTINUOUS = 0;
+  DISCRETE = 1;
+}
