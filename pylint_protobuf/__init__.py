@@ -321,15 +321,25 @@ def _extract_fields(node, module_globals, inner_fields, qualname):
     if inner_fields is None:
         inner_fields = {}
 
+    if not isinstance(node, astroid.AssignName):
+        return None
+    rhs = node.parent.value
+    try:
+        attr_name = rhs.func.attrname
+    except AttributeError:
+        return None
+    if attr_name == "GeneratedProtocolMessageType":
+        return _parse_generated_protocol_message(rhs, module_globals, inner_fields, qualname)
+    return None
+
+
+def _parse_generated_protocol_message(call, module_globals, inner_fields, qualname):
     def parse_name(var):
         if not isinstance(var, astroid.Name):
             return None
         outer_node = module_globals.get(var.name)
         filtered_fields = inner_fields.get(var.name, {})
         return _parse_descriptor(outer_node, filtered_fields, qualname)
-    if not isinstance(node, astroid.AssignName):
-        return None
-    call = node.parent.value
     if not isinstance(call, astroid.Call) or len(call.args) < 3:
         return None
     type_dict = call.args[2]
