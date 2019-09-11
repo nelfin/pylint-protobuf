@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## Unreleased
+- Add support for enum values. Thanks @TimKingNF for the request.
+
 ## [0.7] - 2019-08-21
 - Add fix for AttributeError raised when checking files using imported message
   definitions (#9). Thanks @contrivable for the report
