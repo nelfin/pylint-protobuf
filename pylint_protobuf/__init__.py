@@ -13,6 +13,13 @@ MESSAGES = {
         'Used when an undefined field of a protobuf generated class is '
         'accessed'
     ),
+    'E%02d02' % BASE_ID: (
+        'Value %r does not appear in the declared values of protobuf-'
+        'generated enum %r and will raise ValueError at runtime',
+        'protobuf-enum-value',
+        'Used when an undefined enum value of a protobuf generated enum '
+        'is built'
+    ),
 }
 PROTOBUF_IMPLICIT_ATTRS = [
     'ByteSize',

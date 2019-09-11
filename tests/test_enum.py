@@ -62,3 +62,19 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         """)
         with self.assertNoMessages():
             self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unimplemented')
+    def test_import_enum_missing_attribute_by_value_warns(self):
+        node = astroid.extract_node("""
+        from fixture.enum_pb2 import Variable
+        print(
+            Variable.Value('should_warn')  #@
+        )
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node,
+            args=('should_warn', 'fixture.enum_pb2.Variable')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
