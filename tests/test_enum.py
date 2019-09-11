@@ -8,7 +8,6 @@ import pylint_protobuf
 class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_import_enum_types_no_errors(self):
         node = astroid.extract_node("""
         from fixture.enum_pb2 import Variable
@@ -17,7 +16,6 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_import_enum_values_no_errors(self):
         node = astroid.extract_node("""
         from fixture.enum_pb2 import DISCRETE

@@ -324,13 +324,21 @@ def _extract_fields(node, module_globals, inner_fields, qualname):
     if not isinstance(node, astroid.AssignName):
         return None
     rhs = node.parent.value
+    if isinstance(rhs, astroid.Const):
+        return _parse_enum_value(node, rhs)
     try:
         attr_name = rhs.func.attrname
     except AttributeError:
         return None
     if attr_name == "GeneratedProtocolMessageType":
         return _parse_generated_protocol_message(rhs, module_globals, inner_fields, qualname)
+    if attr_name == "EnumTypeWrapper":
+        return _parse_enum_type_wrapper(node, rhs)
     return None
+
+
+def _parse_enum_value(node, value):
+    return {node.name: TypeClass(value.pytype())}
 
 
 def _parse_generated_protocol_message(call, module_globals, inner_fields, qualname):
@@ -353,6 +361,10 @@ def _parse_generated_protocol_message(call, module_globals, inner_fields, qualna
             if getattr(key, 'value', None) == 'DESCRIPTOR':
                 return parse_name(var)
     return None
+
+
+def _parse_enum_type_wrapper(node, rhs):
+    return {node.name: TypeClass(None)}  # TODO: parse enum descriptor
 
 
 def _parse_message_type(node):
