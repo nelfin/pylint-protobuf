@@ -1,7 +1,8 @@
 # pylint-protobuf
 
-## Unreleased
+## [0.8] - 2019-09-12
 - Add support for enum values. Thanks @TimKingNF for the request.
+- Fix warning behaviour around star imports
 
 ## [0.7] - 2019-08-21
 - Add fix for AttributeError raised when checking files using imported message
