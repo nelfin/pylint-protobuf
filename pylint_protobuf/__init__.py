@@ -462,13 +462,24 @@ def import_(node, module_name, scope):
         mod = node.do_import_module(module_name)
     except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
         return new_scope  # TODO: warn about not being able to import?
-
-    inner_fields = find_fields_by_name(mod)
-    find_message_types_by_name(mod)
-
     imported_names = []
     if isinstance(node, astroid.ImportFrom):
         imported_names = node.names
+    if mod.package:
+        assert len(imported_names) == 1, "TODO"
+        for name, alias in imported_names:
+            mod2 = mod.import_module(name, relative_only=True)
+            new_scope = import_module_(mod2, name, new_scope, [])
+            return new_scope
+    else:
+        return import_module_(mod, module_name, new_scope, imported_names)
+
+
+def import_module_(mod, module_name, scope, imported_names):
+    new_scope = scope.copy()
+    del scope
+    inner_fields = find_fields_by_name(mod)
+    find_message_types_by_name(mod)
 
     def likely_name(n):
         # XXX: parse all fields for nested classes
@@ -530,14 +541,19 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def visit_import(self, node):
         for modname, alias in node.names:
+            if not modname.endswith('_pb2'):
+                continue
             self._import_node(node, modname, alias)
 
     def visit_importfrom(self, node):
-        self._import_node(node, node.modname)
+        if not node.modname.endswith('_pb2'):
+            for name, alias in node.names:
+                if name.endswith('_pb2'):
+                    self._import_node(node, node.modname, alias)
+        else:
+            self._import_node(node, node.modname)
 
     def _import_node(self, node, modname, alias=None):
-        if not modname.endswith('_pb2'):
-            return
         new_scope = import_(node, modname, self._scope)
         assert issubset(self._scope, new_scope)
         if alias is not None and modname in new_scope:
