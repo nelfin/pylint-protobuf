@@ -469,6 +469,12 @@ def import_(node, module_name, scope):
         for name, alias in imported_names:
             mod2 = mod.import_module(name, relative_only=True)
             new_scope = import_module_(mod2, name, new_scope, [])
+            if alias is not None and name in new_scope:
+                # modname not in new_scope implies that the module was not
+                # successfully imported
+                diff = new_scope[name]
+                del new_scope[name]
+                new_scope[alias] = diff
         return new_scope
     else:
         return import_module_(mod, module_name, new_scope, imported_names)
@@ -546,9 +552,10 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def visit_importfrom(self, node):
         if not node.modname.endswith('_pb2'):
-            for name, alias in node.names:
+            for name, _ in node.names:
+                # NOTE: aliasing of module imports is handled in import_
                 if name.endswith('_pb2'):
-                    self._import_node(node, node.modname, alias)
+                    self._import_node(node, node.modname)
         else:
             self._import_node(node, node.modname)
 

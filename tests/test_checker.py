@@ -589,3 +589,16 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         from fixture import innerclass_pb2, import_pb2
         """)
         self.walk(node.root())
+
+    def test_issue13_importing_many_modules_with_aliases_from_package(self):
+        node = astroid.extract_node("""
+        from fixture import import_pb2 as bar, innerclass_pb2 as foo
+        p = foo.Person()
+        p.should_warn = 123
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('should_warn', 'innerclass_pb2.Person')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
