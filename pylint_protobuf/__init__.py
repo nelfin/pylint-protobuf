@@ -479,6 +479,9 @@ def import_(node, module_name, scope):
     def qualified_name(n):
         return '{}.{}'.format(module_name, n)
 
+    def unqualified_name(n):
+        return n[len(module_name)+1:]  # +1 = include dot
+
     new_names = {}
     for original_name, nodes in mod.globals.items():
         if likely_name(original_name):
@@ -492,7 +495,9 @@ def import_(node, module_name, scope):
     new_scope[module_name] = Module(module_name, new_names)
     for name, alias in imported_names:  # check aliasing for ImportFrom
         if name == '*':
-            continue
+            for qualname in new_names:
+                new_scope[unqualified_name(qualname)] = new_names[qualname]
+            break  # it's a SyntaxError to have other clauses with a *-import
         if alias is None:
             alias = name
         new_scope[alias] = new_names[qualified_name(name)]
