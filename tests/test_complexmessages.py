@@ -31,6 +31,15 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
+    def test_issue12_field_defaults_no_errors(self):
+        node = astroid.extract_node("""
+        from fixture.complexfield_pb2 import Inner
+        a = Inner()
+        b = a.value
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
     def test_inner_class_no_warnings(self):
         node = astroid.extract_node("""
         from fixture.innerclass_pb2 import Person

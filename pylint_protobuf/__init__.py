@@ -171,7 +171,10 @@ def _typeof(scope, node):
     else:
         if node is None:
             return None  # node may be Uninferable
-        return scope.get(node.as_string())
+        try:
+            return scope.get(node.as_string())
+        except AttributeError:
+            return None
 
 
 def _assign(scope, target, rhs):
