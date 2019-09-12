@@ -553,7 +553,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node, args=('should_warn', 'fixture.person_pb2.Parent.child')
+            node=node, args=('should_warn', 'fixture.import_pb2.Parent.child')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
