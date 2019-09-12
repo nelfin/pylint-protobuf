@@ -466,11 +466,10 @@ def import_(node, module_name, scope):
     if isinstance(node, astroid.ImportFrom):
         imported_names = node.names
     if mod.package:
-        assert len(imported_names) == 1, "TODO"
         for name, alias in imported_names:
             mod2 = mod.import_module(name, relative_only=True)
             new_scope = import_module_(mod2, name, new_scope, [])
-            return new_scope
+        return new_scope
     else:
         return import_module_(mod, module_name, new_scope, imported_names)
 
