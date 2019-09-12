@@ -61,6 +61,12 @@ class TypeTags(object):
     OBJECT = 11
 
 
+class LabelTags(object):
+    OPTIONAL = 1
+    REQUIRED = 2
+    REPEATED = 3
+
+
 def _slice(subscript):
     """
     slice ::
