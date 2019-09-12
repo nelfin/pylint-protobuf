@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [0.9] - 2019-09-12
+- Fix AttributeError raised on bad type inference of field defaults (#12).
+  Thanks @TimKingNF.
+
 ## [0.8] - 2019-09-12
 - Add support for enum values. Thanks @TimKingNF for the request.
 - Fix warning behaviour around star imports
