@@ -104,6 +104,14 @@ class TypeClass(object):
     def __init__(self, t):
         self.t = t
 
+    @property
+    def fields(self):
+        return self.t.fields
+
+    @property
+    def qualname(self):
+        return self.t.qualname
+
     def instance(self):
         # TODO: clarify/unify this and ClassDef
         return self.t
@@ -131,6 +139,17 @@ class Module(object):
     def getattr(self, var):
         qualified_name = '{}.{}'.format(self.original_name, var)
         return self.module_globals.get(qualified_name)
+
+    @property
+    def fields(self):
+        return [self.unqualified_name(k) for k in self.module_globals]
+
+    @property
+    def qualname(self):
+        return self.original_name
+
+    def unqualified_name(self, n):
+        return n[len(self.original_name)+1:]  # +1 = include dot
 
     def __repr__(self):
         return "Module({}, {})".format(self.original_name, self.module_globals)
@@ -203,12 +222,12 @@ def _assignattr(scope, node):
     assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
     expr, attr = node.expr, node.attrname
     expr_type = _typeof(scope, expr)
-    if expr_type is None or isinstance(expr_type, Module):
+    if expr_type is None:
         return True, []  # not something we're tracking?
-    try:
-        fields, qualname = expr_type.fields, expr_type.qualname  # ClassDef
+    try:  # ClassDef, Module, TypeClass
+        fields, qualname = expr_type.fields, expr_type.qualname
     except AttributeError:
-        fields, qualname = expr_type.t.fields, expr_type.t.qualname  # TypeClass
+        return True, []  # unknown expression type
     if fields is None:
         # assert False, "type fields missing for {!r}".format(expr_type)
         return False, []
