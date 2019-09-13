@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## Unreleased
+- Fix behaviour around importing protobuf modules from packages (#13).
+  Thanks @mishas for the report
+
 ## [0.9] - 2019-09-12
 - Fix AttributeError raised on bad type inference of field defaults (#12).
   Thanks @TimKingNF.
