@@ -108,10 +108,33 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def test_issue16_nested_enum_definition_warns(self):
+    @pytest.mark.xfail(reason='nested namespaces unimplemented')
+    def test_fixme_issue16_nested_enum_definition_no_errors(self):
+        node = astroid.extract_node("""
+        import fixture.nested_enum_pb2 as sut
+        sut.Message.UNO
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    @pytest.mark.xfail(reason='nested namespaces unimplemented')
+    def test_issue16_package_nested_enum_definition_warns(self):
         node = astroid.extract_node("""
         import fixture.nested_enum_pb2
         fixture.nested_enum_pb2.Message.should_warn
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node,
+            args=('should_warn', 'fixture.nested_enum_pb2.Message')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_issue16_nested_enum_definition_warns(self):
+        node = astroid.extract_node("""
+        import fixture.nested_enum_pb2 as sut
+        sut.Message.should_warn
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',

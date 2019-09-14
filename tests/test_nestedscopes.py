@@ -8,6 +8,21 @@ import pylint_protobuf
 class TestNestedScopes(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
+    @pytest.mark.xfail(reason='scope and modules overwrite so last wins')
+    def test_many_imports_no_aliasing(self):
+        node = astroid.extract_node("""
+        import fixture.innerclass_pb2
+        import fixture.import_pb2
+        p = innerclass_pb2.Person()
+        p.should_warn = 123
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('should_warn', 'innerclass_pb2.Person')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
     @pytest.mark.xfail(reason='unimplemented')
     def test_aliasing_by_inner_class_does_not_warn(self):
         inner = astroid.extract_node("""
