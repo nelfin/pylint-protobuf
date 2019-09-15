@@ -1,8 +1,10 @@
 # pylint-protobuf
 
-## Unreleased
-- Fix behaviour around importing protobuf modules from packages (#13).
-  Thanks @mishas for the report
+## [0.10] - 2019-09-16
+- Fix behaviour around importing protobuf modules from packages (#13)
+- Remove false-positive warnings on protobuf well-known types (#14)
+  Thanks @mishas for the report on #13 and #14.
+- Fix missing warnings on top-level enum values
 
 ## [0.9] - 2019-09-12
 - Fix AttributeError raised on bad type inference of field defaults (#12).
