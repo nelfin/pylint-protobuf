@@ -43,6 +43,10 @@ PROTOBUF_IMPLICIT_ATTRS = [
 ]
 
 
+def wellknowntype(modname):
+    return modname.startswith('google.protobuf') and modname.endswith('_pb2')
+
+
 class TypeTags(object):
     NONE = -1
     OBJECT = 11
@@ -565,11 +569,15 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def visit_import(self, node):
         for modname, alias in node.names:
+            if wellknowntype(modname):
+                continue
             if not modname.endswith('_pb2'):
                 continue
             self._import_node(node, modname, alias)
 
     def visit_importfrom(self, node):
+        if wellknowntype(node.modname):
+            return
         if not node.modname.endswith('_pb2'):
             for name, _ in node.names:
                 # NOTE: aliasing of module imports is handled in import_
