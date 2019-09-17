@@ -488,7 +488,7 @@ def import_(node, module_name, scope):
         -> (scope' : Name -> Maybe[Type])
     """
     assert isinstance(node, (astroid.Import, astroid.ImportFrom))
-    new_scope = scope.copy()
+    old_scope, new_scope = scope.copy(), scope.copy()
     del scope
     try:
         mod = node.do_import_module(module_name)
@@ -507,6 +507,8 @@ def import_(node, module_name, scope):
                 diff = new_scope[name]
                 del new_scope[name]
                 new_scope[alias] = diff
+                if name in old_scope:  # undo overwrite iff name was present
+                    new_scope[name] = old_scope[name]
         return new_scope
     else:
         return import_module_(mod, module_name, new_scope, imported_names)
@@ -603,6 +605,8 @@ class ProtobufDescriptorChecker(BaseChecker):
         if alias is not None and modname in new_scope:
             # modname not in new_scope implies that the module was not
             # successfully imported
+            #
+            # TODO: evaluate if this can cause issues like #18
             diff = new_scope[modname]
             del new_scope[modname]
             new_scope[alias] = diff
