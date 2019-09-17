@@ -72,3 +72,14 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
             """.format(module=module, wkt=wkt, field=field))
             with self.assertNoMessages():
                 self.walk(node.root())
+
+    @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
+    def test_import_wkt_as_module_no_warnings(self, module, wkt, fields):
+        for field in fields:
+            node = astroid.extract_node("""
+            from google.protobuf import {module}
+            t = {module}.{wkt}()
+            t.{field}()
+            """.format(module=module, wkt=wkt, field=field))
+            with self.assertNoMessages():
+                self.walk(node.root())
