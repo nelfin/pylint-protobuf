@@ -600,16 +600,17 @@ class ProtobufDescriptorChecker(BaseChecker):
             self._import_node(node, node.modname)
 
     def _import_node(self, node, modname, alias=None):
+        old_scope = self._scope.copy()
         new_scope = import_(node, modname, self._scope)
         assert issubset(self._scope, new_scope)
         if alias is not None and modname in new_scope:
             # modname not in new_scope implies that the module was not
             # successfully imported
-            #
-            # TODO: evaluate if this can cause issues like #18
             diff = new_scope[modname]
             del new_scope[modname]
             new_scope[alias] = diff
+            if modname in old_scope:
+                new_scope[modname] = old_scope[modname]
         self._scope = new_scope
 
     @utils.check_messages('protobuf-undefined-attribute')
