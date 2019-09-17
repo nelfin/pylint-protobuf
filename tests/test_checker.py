@@ -602,3 +602,11 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unfixed', raises=AssertionError)
+    def test_issue18_renamed_from_import_no_assertion_error(self):
+        node = astroid.extract_node("""
+        from fixture import import_pb2
+        from fixture import import_pb2 as foo
+        """)
+        self.walk(node.root())
