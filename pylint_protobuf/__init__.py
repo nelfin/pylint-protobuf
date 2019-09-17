@@ -41,10 +41,19 @@ PROTOBUF_IMPLICIT_ATTRS = [
     'SetInParent',
     'WhichOneof',
 ]
+WELLKNOWNTYPE_MODULES = [
+    'any_pb2',
+    'timestamp_pb2',
+    'duration_pb2',
+    'fieldmask_pb2',
+    'struct_pb2',
+    'listvalue_pb2',
+]
 
 
 def wellknowntype(modname):
-    return modname.startswith('google.protobuf') and modname.endswith('_pb2')
+    return (modname in WELLKNOWNTYPE_MODULES) or \
+           (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
 
 
 class TypeTags(object):
@@ -580,6 +589,8 @@ class ProtobufDescriptorChecker(BaseChecker):
             return
         if not node.modname.endswith('_pb2'):
             for name, _ in node.names:
+                if wellknowntype(name):
+                    continue
                 # NOTE: aliasing of module imports is handled in import_
                 if name.endswith('_pb2'):
                     self._import_node(node, node.modname)

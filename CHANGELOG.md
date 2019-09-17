@@ -1,5 +1,10 @@
 # pylint-protobuf
 
+## Unreleased
+- Remove false-positive warnings on protobuf well-known types when parent
+  module is from-imported from a package (#17). Thanks @Shesagiri for the
+  report.
+
 ## [0.10] - 2019-09-16
 - Fix behaviour around importing protobuf modules from packages (#13)
 - Remove false-positive warnings on protobuf well-known types (#14)
