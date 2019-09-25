@@ -1,9 +1,13 @@
 # pylint-protobuf
 
-## Unreleased
+## [0.11] - 2019-09-25
 - Remove false-positive warnings on protobuf well-known types when parent
   module is from-imported from a package (#17). Thanks @Shesagiri for the
   report.
+- Fix unhandled AssertionError on multiple aliases of a module imported from a
+  package (#18)
+- Fix missing warnings on aliased versions of single module imported multiple
+  times
 
 ## [0.10] - 2019-09-16
 - Fix behaviour around importing protobuf modules from packages (#13)
