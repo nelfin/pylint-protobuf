@@ -8,7 +8,30 @@ import pylint_protobuf
 class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.xfail(reason='unimplemented')
+    def test_repeated_field_no_errors(self):
+        node = astroid.extract_node("""
+        import repeated_pb2
+
+        outer = repeated_pb2.Outer()
+        inner = outer.items.add()  #@
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_missing_field_on_outer_warns(self):
+        node = astroid.extract_node("""
+        import repeated_pb2
+
+        outer = repeated_pb2.Outer()
+        inner = outer.items.missing()  #@
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('missing', 'Outer')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
     def test_missing_field_on_repeated_warns(self):
         node = astroid.extract_node("""
         import repeated_pb2

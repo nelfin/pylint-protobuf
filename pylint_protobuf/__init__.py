@@ -108,6 +108,18 @@ class SimpleField(object):
         self.name = name
 
 
+class RepeatedField(object):
+    def __init__(self, type_):
+        self.type_ = type_
+
+    @property
+    def fields(self):
+        return ['add']
+
+    def add(self):
+        assert False, "TODO"
+
+
 class ClassDef(object):  # XXX
     def __init__(self, fields, qualname):
         self.fields = fields
@@ -207,6 +219,7 @@ def _typeof(scope, node):
     elif isinstance(node, (TypeClass, ClassDef)):
         return node
     else:
+        #import pdb; pdb.set_trace()  # TODO: check repeated field
         if node is None:
             return None  # node may be Uninferable
         try:
@@ -295,7 +308,8 @@ def visit_attribute(scope, node):
 
 def _build_field(call):
     name = ''
-    type_ = -1
+    type_ = TypeTags.NONE
+    label = LabelTags.OPTIONAL
     for kw in call.keywords:
         if kw.arg == 'name':
             value = getattr(kw.value, 'value', None)
@@ -305,7 +319,11 @@ def _build_field(call):
             value = getattr(kw.value, 'value', None)
             if value is not None:
                 type_ = value
-    return name, type_
+        if kw.arg == 'label':
+            value = getattr(kw.value, 'value', None)
+            if value is not None:
+                label = value
+    return name, type_, label
 
 
 def _parse_fields(iterable, inner_fields, qualname):
@@ -320,7 +338,7 @@ def _parse_fields(iterable, inner_fields, qualname):
     for call in iterable:
         if not isinstance(call, astroid.Call):
             return None
-        name, type_ = _build_field(call)
+        name, type_, label = _build_field(call)
         if type_ == TypeTags.OBJECT:
             # XXX: guard against mutually recursive types
             try:
@@ -328,7 +346,10 @@ def _parse_fields(iterable, inner_fields, qualname):
             except KeyError:
                 continue
             fully_qualified_name = '{}.{}'.format(qualname, name)
-            fields[name] = ClassDef(desc, fully_qualified_name)
+            if label == LabelTags.REPEATED:
+                fields[name] = RepeatedField(desc)
+            else:
+                fields[name] = ClassDef(desc, fully_qualified_name)
         elif type_ == TypeTags.NONE:  # EnumValueDescriptor?
             fields[name] = SimpleField(name)
         else:
