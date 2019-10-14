@@ -170,3 +170,27 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
+
+    @pytest.mark.xfail(reason='issue #21 unfixed')
+    def test_issue21_nested_enum_annassign(self):
+        node = astroid.extract_node("""
+        import fixture.nested_enum_pb2 as sut
+        def fun(type_: sut.Message.Inner):
+            pass
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    @pytest.mark.xfail(reason='issue #21 unfixed')
+    def test_issue21_missing_field_on_nested_enum(self):
+        node = astroid.extract_node("""
+        import fixture.nested_enum_pb2 as sut
+        sut.Message.Inner.NOPE = 123
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0],
+            args=('NOPE', 'fixture.nested_enum_pb2.Message.Inner')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
