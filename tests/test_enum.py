@@ -171,7 +171,6 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='issue #21 unfixed')
     def test_issue21_nested_enum_annassign(self):
         node = astroid.extract_node("""
         import fixture.nested_enum_pb2 as sut

@@ -371,7 +371,26 @@ def _parse_enum_descriptor(node, candidates, qualname):
     return None
 
 
-def _extract_fields(node, module_globals, inner_fields, qualname):
+def add_inner_types(rhs, contained_types, additions):
+    retval = additions.copy()
+    del additions
+    for arg in rhs.args:
+        if type(arg) is not astroid.Call:
+            continue
+        for kw in arg.keywords:
+            if kw.arg == 'DESCRIPTOR':
+                try:
+                    name = kw.value.name
+                except AttributeError:
+                    continue
+                else:
+                    if name in contained_types:
+                        field_name, _ = _build_field(contained_types[name])
+                        retval[field_name] = SimpleField(field_name)  # FIXME: inner fields
+    return retval
+
+
+def _extract_fields(node, module_globals, inner_fields, qualname, contained_types=None):
     """
     Given a "name = type(...)"-style assignment, look up the variable
     corresponding to the protobuf-generated descriptor in the module and parse
@@ -401,7 +420,9 @@ def _extract_fields(node, module_globals, inner_fields, qualname):
     except AttributeError:
         return None
     if attr_name == "GeneratedProtocolMessageType":
-        return _parse_generated_protocol_message(rhs, module_globals, inner_fields, qualname)
+        retval = _parse_generated_protocol_message(rhs, module_globals, inner_fields, qualname)
+        retval = add_inner_types(rhs, contained_types, retval)
+        return retval
     if attr_name == "EnumTypeWrapper":
         return _parse_enum_type_wrapper(rhs, module_globals, qualname)
     return None
@@ -480,6 +501,28 @@ def find_message_types_by_name(mod_node):
     pass
 
 
+def _parse_containing_type(node):
+    try:
+        parent = node.parent.value.name
+        child = node.expr.name
+    except AttributeError:
+        return None
+    else:
+        return parent, child
+
+
+def find_containing_types(mod_node):
+    candidates = defaultdict(dict)
+    for c in mod_node.nodes_of_class(astroid.AssignAttr):
+        if c.attrname == 'containing_type':
+            message_type = _parse_containing_type(c)
+            if message_type is None:
+                continue
+            parent, child = message_type
+            candidates[parent] = mod_node.getattr(child)[0].parent.value
+    return candidates
+
+
 def import_(node, module_name, scope):
     """
     import ::
@@ -519,6 +562,7 @@ def import_module_(mod, module_name, scope, imported_names):
     del scope
     inner_fields = find_fields_by_name(mod)
     find_message_types_by_name(mod)
+    contained_types = find_containing_types(mod)
 
     def likely_name(n):
         # XXX: parse all fields for nested classes
@@ -540,7 +584,8 @@ def import_module_(mod, module_name, scope, imported_names):
         if likely_name(original_name):
             # FIXME: multiple nodes, renamings?
             imported_name = qualified_name(original_name)
-            fields = _extract_fields(nodes[0], mod.globals, inner_fields, imported_name)
+            fields = _extract_fields(nodes[0], mod.globals, inner_fields,
+                                     imported_name, contained_types)
             if fields is not None:
                 cls = ClassDef(fields, imported_name)
                 new_names[imported_name] = TypeClass(cls)
