@@ -20,7 +20,7 @@ fields from Protobuf types.
     EOF
     $ protoc person.proto --python_out=.
     $ pip install pylint-protobuf
-    $ pylint --load-plugin=pylint_protobuf example.py
+    $ pylint --load-plugins=pylint_protobuf example.py
     ************* Module example
     E:  4, 0: Field 'invalid_field' does not appear in the declared fields of
     protobuf-generated class 'Person' and will raise AttributeError on access
