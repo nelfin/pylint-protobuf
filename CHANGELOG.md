@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## [0.12] - 2020-02-01
+- Fix warnings on nested message definitions
+
 ## [0.11] - 2019-09-25
 - Remove false-positive warnings on protobuf well-known types when parent
   module is from-imported from a package (#17). Thanks @Shesagiri for the
