@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 import astroid
 import pylint.testutils
@@ -171,6 +173,8 @@ class TestEnumDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    @pytest.mark.skipif(sys.version_info < (3, 0),
+                        reason='function annotations are Python 3+')
     def test_issue21_nested_enum_annassign(self):
         node = astroid.extract_node("""
         import fixture.nested_enum_pb2 as sut
