@@ -40,6 +40,28 @@ def nested_enum_mod(proto_builder):
     """, 'nested_enum')
 
 
+@pytest.fixture
+def package_nested_enum_mod(proto_builder):
+    return proto_builder("""
+        syntax = "proto2";
+        package test;
+
+        enum Outer {
+          UNDEFINED = 0;
+          ONE = 1;
+          TWO = 2;
+        }
+
+        message Message {
+          enum Inner {
+            UNDEFINED = 0;
+            UNO = 1;
+            DOS = 2;
+          }
+        }
+    """, 'package.nested_enum')
+
+
 class TestEnumDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
@@ -129,7 +151,7 @@ class TestEnumDefinitions(CheckerTestCase):
         """.format(nested_enum_mod)))
 
     @pytest.mark.xfail(reason='nested namespaces unimplemented')
-    def test_issue16_package_nested_enum_definition_warns(self, nested_enum_mod):
+    def test_issue16_package_nested_enum_definition_warns(self, pacage_nested_enum_mod):
         node = extract_node("""
             import {mod}
             {mod}.Message.should_warn
@@ -154,7 +176,7 @@ class TestEnumDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     @pytest.mark.xfail(reason='nested namespaces unimplemented')
-    def test_issue16_package_missing_toplevel_enum(self, nested_enum_mod):
+    def test_issue16_package_missing_toplevel_enum(self, package_nested_enum_mod):
         node = extract_node("""
             import {mod}
             {mod}.UNO
