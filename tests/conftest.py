@@ -1,9 +1,25 @@
+import os
 import textwrap
 from subprocess import check_call
 
 import astroid
 import pytest
 import pylint.testutils
+
+
+def _touch(fname):
+    with open(fname, 'wb'):
+        pass
+
+
+def _prepare_package_path(path):
+    parts = path.split('.')
+    if len(parts) == 1:
+        return
+    os.makedirs(os.path.join(*parts[:-1]), exist_ok=True)
+    for dirname in parts:
+        os.chdir(dirname)
+        _touch('__init__.py')
 
 
 @pytest.fixture
@@ -14,6 +30,7 @@ def proto_builder(tmpdir, monkeypatch):
         p = tmpdir.join(proto_name)
         p.write(s)
         old = tmpdir.chdir()
+        _prepare_package_path(name)
         try:
             check_call(['protoc', '--python_out=.', proto_name])
         finally:
