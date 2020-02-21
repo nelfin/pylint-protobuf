@@ -497,13 +497,15 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         except astroid.exceptions.InferenceError:
             pytest.fail("InferenceError should not propagate")
 
-    def test_issue6_importing_a_missing_module(self):
+    def test_issue6_importing_a_missing_module(self, error_on_missing_modules):
         node = astroid.extract_node('import missing_module_pb2')
-        self.walk(node.root())
+        with pytest.raises(AssertionError, match='expected to import module "missing_module_pb2"'):
+            self.walk(node.root())
 
-    def test_issue6_importing_a_missing_module_as_alias(self):
+    def test_issue6_importing_a_missing_module_as_alias(self, error_on_missing_modules):
         node = astroid.extract_node('import missing_module_pb2 as foo')
-        self.walk(node.root())
+        with pytest.raises(AssertionError, match='expected to import module "missing_module_pb2"'):
+            self.walk(node.root())
 
     def test_issue7_indexerror_on_slice_inference(self):
         node = astroid.extract_node("""

@@ -5,6 +5,12 @@ from subprocess import check_call
 import astroid
 import pytest
 import pylint.testutils
+import pylint_protobuf
+
+
+@pytest.fixture(autouse=False)
+def error_on_missing_modules():
+    pylint_protobuf._MISSING_IMPORT_IS_ERROR = True
 
 
 def _touch(fname):

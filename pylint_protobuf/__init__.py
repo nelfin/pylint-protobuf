@@ -4,6 +4,7 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
+_MISSING_IMPORT_IS_ERROR = False
 BASE_ID = 59
 MESSAGES = {
     'E%02d01' % BASE_ID: (
@@ -536,7 +537,8 @@ def import_(node, module_name, scope):
     try:
         mod = node.do_import_module(module_name)
     except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
-        return new_scope  # TODO: warn about not being able to import?
+        assert not _MISSING_IMPORT_IS_ERROR, 'expected to import module "{}"'.format(module_name)
+        return new_scope
     imported_names = []
     if isinstance(node, astroid.ImportFrom):
         imported_names = node.names
