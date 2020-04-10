@@ -46,6 +46,16 @@ def proto_builder(tmpdir, monkeypatch):
     return proto
 
 
+@pytest.fixture
+def module_builder(tmpdir, monkeypatch):
+    def module(source, name):
+        p = tmpdir.join('{}.py'.format(name))
+        p.write(textwrap.dedent(source))
+        monkeypatch.syspath_prepend(tmpdir)
+        return name
+    return module
+
+
 def extract_node(source):
     return astroid.extract_node(source)
 
