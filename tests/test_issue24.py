@@ -7,12 +7,13 @@ from conftest import CheckerTestCase, extract_node
 @pytest.fixture
 def nested_mod(proto_builder):
     return proto_builder("""
-        syntax = "proto3";
+        syntax = "proto2";
+        package test;
         message Outer {
           message Inner {
-            string inner_field = 1;
+            required string inner_field = 1;
           }
-          Inner field = 1;
+          required Inner field = 1;
         }
     """, 'nested')
 
@@ -20,15 +21,15 @@ def nested_mod(proto_builder):
 @pytest.fixture
 def nested_plus_enum_mod(proto_builder):
     return proto_builder("""
-        syntax = "proto3";
+        syntax = "proto2";
         message Outer {
           enum InnerEnum {
             VALUE = 0;
           }
           message Inner {
-            string inner_field = 1;
+            required string inner_field = 1;
           }
-          Inner field = 1;
+          required Inner field = 1;
         }
     """, 'nested_plus_enum')
 
