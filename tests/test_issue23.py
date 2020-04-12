@@ -9,7 +9,7 @@ def inner_mod(proto_builder):
     return proto_builder("""
         syntax = "proto2";
         package test;
-        message Person {
+        message Test {
             required int32 id = 1;
         }
     """)
