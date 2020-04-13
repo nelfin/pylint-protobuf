@@ -18,12 +18,41 @@ def _touch(fname):
         pass
 
 
-def _prepare_package_path(path):
-    parts = path.split('.')
+def _split_package_path(pkg_spec):
+    """
+    >>> _split_package_path('module')
+    ('.', 'module')
+    >>> _split_package_path('package.module')
+    ('package', 'module')
+    >>> _split_package_path('parent.package.module')
+    ('parent/package', 'module')
+    """
+    parts = pkg_spec.split('.')
     if len(parts) == 1:
+        return '.', parts[0]
+    return os.path.join(*parts[:-1]), parts[-1]
+
+
+def _parts(path):
+    """
+    >>> list(_parts('parent/child/'))
+    ['parent', 'child']
+    >>> list(_parts('parent/child'))
+    ['parent']
+    """
+    parts = []
+    head, _ = os.path.split(path)
+    while head:
+        head, tail = os.path.split(head)
+        parts.append(tail)
+    return reversed(parts)
+
+
+def _prepare_package_path(path):
+    if path == '.':
         return
-    os.makedirs(os.path.join(*parts[:-1]), exist_ok=True)
-    for dirname in parts:
+    os.makedirs(path, exist_ok=True)
+    for dirname in _parts(path):
         os.chdir(dirname)
         _touch('__init__.py')
 
@@ -31,16 +60,19 @@ def _prepare_package_path(path):
 @pytest.fixture
 def proto_builder(tmpdir, monkeypatch):
     def proto(source, name='mod'):
-        proto_name = '{}.proto'.format(name)
-        s = textwrap.dedent(source)
-        p = tmpdir.join(proto_name)
-        p.write(s)
+        path, module_name = _split_package_path(name)
+        proto_name = '{}.proto'.format(module_name)
+
         old = tmpdir.chdir()
-        _prepare_package_path(name)
+        _prepare_package_path(path)
+        p = tmpdir.join(proto_name)
+        p.write(textwrap.dedent(source))
+
         try:
-            check_call(['protoc', '--python_out=.', proto_name])
+            check_call(['protoc', '--python_out={}'.format(path), proto_name])
         finally:
             old.chdir()
+
         monkeypatch.syspath_prepend(tmpdir)
         return '{}_pb2'.format(name)
     return proto
