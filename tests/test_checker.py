@@ -6,6 +6,7 @@ import astroid
 import pylint.testutils
 
 import pylint_protobuf
+import pylint_protobuf.parse_pb2
 
 from hypothesis import given, strategies as st
 
@@ -454,7 +455,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     def test_new_typeof_import(self):
         Person = pylint_protobuf.TypeClass(object())
         mod_globals = {'module_pb2.Person': Person}
-        module_pb2 = pylint_protobuf.Module('module_pb2', mod_globals)
+        module_pb2 = pylint_protobuf.parse_pb2.Module('module_pb2', mod_globals)
         scope = {'module_pb2': module_pb2}
         node = astroid.extract_node('module_pb2.Person')
         assert pylint_protobuf._typeof(scope, node) is Person
