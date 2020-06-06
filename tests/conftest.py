@@ -5,6 +5,10 @@ from subprocess import check_call
 import astroid
 import pytest
 import pylint.testutils
+from pylint import checkers
+from pylint.lint import PyLinter
+from pylint.testutils import MinimalTestReporter
+
 import pylint_protobuf
 
 
@@ -112,3 +116,21 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
     def assert_adds_messages(self, node, *msg):
         with self.assertAddsMessages(*msg):
             self.walk(node.root())
+
+
+@pytest.fixture
+def linter_factory():
+    def linter(register, enable, disable):
+        _linter = PyLinter()
+        _linter.set_reporter(MinimalTestReporter())
+        checkers.initialize(_linter)
+        if register:
+            register(_linter)
+        if disable:
+            for msg in disable:
+                _linter.disable(msg)
+        if enable:
+            for msg in enable:
+                _linter.enable(msg)
+        return _linter
+    return linter

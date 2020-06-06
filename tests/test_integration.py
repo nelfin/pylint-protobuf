@@ -2,10 +2,6 @@ import os.path
 
 import pytest
 
-from pylint import checkers
-from pylint.lint import PyLinter
-from pylint.testutils import MinimalTestReporter
-
 import pylint_protobuf
 
 try:
@@ -15,35 +11,32 @@ except ImportError:
 
 
 @pytest.fixture
-def linter_factory():
-    def linter(register, enable, disable):
-        _linter = PyLinter()
-        _linter.set_reporter(MinimalTestReporter())
-        checkers.initialize(_linter)
-        if register:
-            register(_linter)
-        if disable:
-            for msg in disable:
-                _linter.disable(msg)
-        if enable:
-            for msg in enable:
-                _linter.enable(msg)
-        return _linter
-    return linter
+def e1101_mod(module_builder):
+    return module_builder("""
+        from person_pb2 import Person
+
+        person = Person()
+        print(person.name)  # should not raise E1101
+        print(person.should_warn)  # should raise E5901
+
+        class Foo: pass
+        Person = Foo  # FIXME: should be renamed by class def
+        person = Person()
+        print(person.renamed_should_warn)  # should raise E1101
+    """, 'e1101')
 
 
-HERE = os.path.dirname(os.path.abspath(__file__))
 EXPECTED_MSGS = [
     pylint_protobuf.MESSAGES['E5901'][0] % ('should_warn', 'Person'),
     "Instance of 'Foo' has no 'renamed_should_warn' member",
 ]
 
 
-def test_no_E1101_on_protobuf_classes(linter_factory):
+def test_no_E1101_on_protobuf_classes(e1101_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
         disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
     )
-    linter.check([os.path.join(HERE, 'e1101.py')])
+    linter.check([e1101_mod])
     actual_msgs = [message.msg for message in linter.reporter.messages]
     assert sorted(actual_msgs) == sorted(EXPECTED_MSGS)
