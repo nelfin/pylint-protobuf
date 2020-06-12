@@ -14,7 +14,11 @@ matrix:
       env: TOXENV=py38
 
 before_install:
-  - sudo apt-get install -y protobuf-compiler
+  - mkdir -p vendor/protoc && pushd vendor/protoc
+    && curl -LO 'https://github.com/google/protobuf/releases/download/v3.4.0/protoc-3.4.0-linux-x86_64.zip'
+    && unzip protoc-3.4.0-linux-x86_64.zip
+    && popd
+  - export PATH=$PWD/vendor/protoc/bin:$PATH
 
 install:
   - pip install tox
