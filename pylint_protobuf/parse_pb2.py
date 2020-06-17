@@ -190,11 +190,6 @@ def parse_enum_type_wrapper(rhs, module_globals, qualname):
     return parse_name(enum_descriptor)
 
 
-def _get_descriptor_attr(arg):
-    if type(arg) is astroid.Call:
-        descriptor_kw = [a for a in arg.keywords if a.arg == 'DESCRIPTOR']
-
-
 def add_inner_types(rhs, contained_types, additions):
     retval = additions.copy()
     del additions
