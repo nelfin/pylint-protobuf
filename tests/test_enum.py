@@ -201,3 +201,12 @@ class TestEnumDefinitions(CheckerTestCase):
         """.format(nested_enum_mod))
         msg = make_message(node.targets[0], nested_enum_mod+'.Message.Inner', 'NOPE')
         self.assert_adds_messages(node, msg)
+
+    def test_nested_enum_dict(self):
+        outer = extract_node("""
+        from fixture.innerclass_dict_pb2 import OuterClass
+        enum = OuterClass.InnerEnum.ENUM_1
+        outer = OuterClass(enum=enum)
+        """)
+        with self.assertNoMessages():
+            self.walk(outer.root())
