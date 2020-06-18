@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [0.13] - 2020-06-18
+- Fix false positive warnings on nested enum definitions. Thanks
+  @diana-infinitus-ai for the PR (#28)
+
 ## [0.12] - 2020-02-01
 - Fix warnings on nested message definitions
 
