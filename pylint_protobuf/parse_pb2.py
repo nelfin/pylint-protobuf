@@ -131,6 +131,19 @@ def parse_descriptor(node, candidates, qualname):
     return None
 
 
+def parse_field_name(arg, parse_name_func):
+    if isinstance(arg, astroid.Call):
+        for kw in arg.keywords:
+            if kw.arg == 'DESCRIPTOR':
+                var = kw.value
+                return parse_name_func(var)
+    elif isinstance(arg, astroid.Dict):
+        for key, var in arg.items:
+            if getattr(key, 'value', None) == 'DESCRIPTOR':
+                return parse_name_func(var)
+    return None
+
+
 def parse_generated_protocol_message(call, module_globals, inner_fields, qualname):
     def parse_name(var):
         if not isinstance(var, astroid.Name):
@@ -141,16 +154,7 @@ def parse_generated_protocol_message(call, module_globals, inner_fields, qualnam
     if not isinstance(call, astroid.Call) or len(call.args) < 3:
         return None
     type_dict = call.args[2]
-    if isinstance(type_dict, astroid.Call):
-        for kw in type_dict.keywords:
-            if kw.arg == 'DESCRIPTOR':
-                var = kw.value
-                return parse_name(var)
-    elif isinstance(type_dict, astroid.Dict):
-        for key, var in type_dict.items:
-            if getattr(key, 'value', None) == 'DESCRIPTOR':
-                return parse_name(var)
-    return None
+    return parse_field_name(type_dict, parse_name)
 
 
 def parse_enum_descriptor(node, candidates, qualname):
@@ -190,18 +194,12 @@ def add_inner_types(rhs, contained_types, additions):
     retval = additions.copy()
     del additions
     for arg in rhs.args:
-        if type(arg) is not astroid.Call:
+        if type(arg) is not astroid.Call and type(arg) is not astroid.Dict:
             continue
-        for kw in arg.keywords:
-            if kw.arg == 'DESCRIPTOR':
-                try:
-                    name = kw.value.name
-                except AttributeError:
-                    continue
-                else:
-                    if name in contained_types:
-                        field_name, _ = build_field(contained_types[name])
-                        retval[field_name] = SimpleField(field_name)  # FIXME: inner fields
+        name = parse_field_name(arg, lambda a: a.name)
+        if name in contained_types:
+            field_name, _ = build_field(contained_types[name])
+            retval[field_name] = SimpleField(field_name)  # FIXME: inner fields
     return retval
 
 

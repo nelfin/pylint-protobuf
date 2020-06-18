@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package test;
+
+message OuterClass {
+  enum InnerEnum {
+      ENUM_1 = 0;
+      ENUM_2 = 1;
+  }
+  InnerEnum enum = 2;
+}
