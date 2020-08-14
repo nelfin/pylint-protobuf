@@ -28,3 +28,9 @@ fields from Protobuf types.
 
     ------------------------------------
     Your code has been rated at -6.67/10
+
+## Known Issues
+
+`pylint-protobuf` does not support the following concepts from protobuf language:
+ * `oneof` fields
+ * repeated fields
