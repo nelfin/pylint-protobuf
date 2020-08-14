@@ -31,6 +31,6 @@ fields from Protobuf types.
 
 ## Known Issues
 
-`pylint-protobuf` does not support the following concepts from protobuf language:
+`pylint-protobuf` does not currently support the following concepts from the protobuf specification:
  * `oneof` fields
  * repeated fields
