@@ -25,8 +25,8 @@ def test_model_repr(example_enum, example_message):
     assert str(example_enum) == 'Enum(ONE=EnumValue(1), TWO=EnumValue(2))'
     assert str(example_message) == (  # noqa
         'Message('
-            'Inner=Enum(INNER_VALUE=EnumValue(0)), '
-            'INNER_VALUE=EnumValue(0)'
+            'INNER_VALUE=EnumValue(0), '
+            'Inner=Enum(INNER_VALUE=EnumValue(0))'
         ')'
     )
 
@@ -35,7 +35,7 @@ def test_mapping_store(example_message):
     values = tuple(example_message)
     assert len(values) == 2
     keys = [k for k, _ in values]
-    assert keys == ['Inner', 'INNER_VALUE']
+    assert keys == ['INNER_VALUE', 'Inner']
 
 
 def test_mapping_attributes(example_enum, example_message):

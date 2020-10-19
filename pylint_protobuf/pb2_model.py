@@ -16,7 +16,7 @@ class _Mapping(object):
         self._values.update(kwargs)
 
     def __iter__(self):
-        return iter(self._values.items())
+        return iter(sorted(self._values.items()))
 
     def __contains__(self, key):
         return key in self._values
