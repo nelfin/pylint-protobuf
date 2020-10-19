@@ -1,12 +1,12 @@
-class EnumValue:
+class EnumValue(object):
     def __init__(self, value):
         self.value = value
 
     def __repr__(self):
-        return f'EnumValue({self.value})'
+        return 'EnumValue({0})'.format(self.value)
 
 
-class _Mapping:
+class _Mapping(object):
     def __init__(self, *args, **kwargs):
         for key, val in args:
             setattr(self, key, val)
@@ -25,8 +25,8 @@ class _Mapping:
         return self._values.get(key)
 
     def __repr__(self):
-        body = ', '.join(f'{k}={v}' for k, v in self)
-        return f'{type(self).__name__}({body})'
+        body = ', '.join('{k}={v}'.format(k=k, v=v) for k, v in self)
+        return '{0}({1})'.format(type(self).__name__, body)
 
 
 class Enum(_Mapping):

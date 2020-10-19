@@ -30,7 +30,7 @@ def example_pb2(proto_builder):
 
 @pytest.mark.xfail(reason='TODO')
 def test_foo(example_pb2):
-    import_node = extract_node(f'import {example_pb2}')
-    mod_node = import_node.do_import_module(f'{example_pb2}')
+    import_node = extract_node('import {0}'.format(example_pb2))
+    mod_node = import_node.do_import_module(example_pb2)
     retval = parse_pb2.import_module(mod_node, example_pb2, {}, [])
     assert False
