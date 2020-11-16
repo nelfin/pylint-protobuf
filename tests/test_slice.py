@@ -3,7 +3,7 @@ import hypothesis.strategies as s
 import astroid
 import pytest
 
-import pylint_protobuf
+from pylint_protobuf.evaluation import slice
 
 
 class Node:
@@ -39,16 +39,16 @@ def dicts(keys, vals, max_size=3):
 NestedLists = s.deferred(lambda: consts | lists(NestedLists))
 @given(subscripts(NestedLists, consts))
 def test_slice_does_not_raise_nested_lists(subscript):
-    pylint_protobuf._slice(subscript)
+    slice(subscript)
 
 
 NestedDicts = s.deferred(lambda: consts | dicts(consts, NestedDicts))
 @pytest.mark.skip(reason='appears to get caught in infinite loop')
 @given(subscripts(NestedDicts, consts))
 def test_slice_does_not_raise_nested_dicts(subscript):
-    pylint_protobuf._slice(subscript)
+    slice(subscript)
 
 
 @given(subscripts(consts, lists(consts)))
 def test_slice_does_not_raise_bad_index(subscript):
-    pylint_protobuf._slice(subscript)
+    slice(subscript)

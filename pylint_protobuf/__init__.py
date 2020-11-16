@@ -5,6 +5,7 @@ from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
 from .parse_pb2 import ClassDef, TypeClass, import_module as import_module_
+from .evaluation import resolve as _typeof, slice as _slice
 
 
 _MISSING_IMPORT_IS_ERROR = False
@@ -60,40 +61,6 @@ def wellknowntype(modname):
            (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
 
 
-def _slice(subscript):
-    """
-    slice ::
-        (Subscript (Node value) (Node idx))
-        -> Maybe[Node]
-    """
-    value, idx = subscript.value, subscript.slice
-    try:
-        indexable = next(value.infer())
-        index = next(idx.infer())
-    except astroid.exceptions.InferenceError:
-        return None
-    if indexable is astroid.Uninferable or index is astroid.Uninferable:
-        return None
-    if not isinstance(index, astroid.Const):
-        return None
-    i = index.value
-    if hasattr(indexable, 'elts'):  # looks like astroid.List
-        mapping = indexable.elts
-    elif hasattr(indexable, 'items'):  # looks like astroid.Dict
-        try:
-            mapping = {
-                next(k.infer()).value: v for k, v in indexable.items
-            }
-        except (AttributeError, TypeError):
-            mapping = {}  # unable to infer constant key values for lookup
-    else:
-        return None
-    try:
-        return mapping[i]
-    except (TypeError, KeyError, IndexError):
-        return None
-
-
 def _instanceof(typeclass):
     """
     instanceof ::
@@ -104,48 +71,6 @@ def _instanceof(typeclass):
         return None
     assert isinstance(typeclass, TypeClass)
     return typeclass.instance()
-
-
-def _typeof(scope, node):
-    """
-    typeof ::
-        scope : Name -> Maybe[Type]
-        node : Node
-        -> Maybe[Type]
-    """
-    if isinstance(node, (astroid.Name, astroid.AssignName)):
-        return scope.get(node.name)
-    elif isinstance(node, astroid.Subscript):
-        return _typeof(scope, _slice(node))
-    elif isinstance(node, astroid.Call):
-        # XXX: return _instanceof(_typeof(scope, node.func))
-        return _typeof(scope, node.func)
-    elif isinstance(node, astroid.Const):
-        return None
-        # NOTE: not returning type(node.value) anymore as it breaks assumptions
-        # around _instanceof
-    elif isinstance(node, astroid.Attribute):
-        try:
-            namespace = scope.get(node.expr.name)
-        except AttributeError:
-            return None
-        # namespace is something like a module or ClassDef that supports
-        # getattr
-        try:
-            return namespace.getattr(node.attrname)  # XXX: changed
-        except AttributeError:
-            return None
-        # else:
-        #     return _typeof(scope, attr)
-    elif isinstance(node, (TypeClass, ClassDef)):
-        return node
-    else:
-        if node is None:
-            return None  # node may be Uninferable
-        try:
-            return scope.get(node.as_string())
-        except AttributeError:
-            return None
 
 
 def _assign(scope, target, rhs):

@@ -410,45 +410,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_new_typeof_only(self):
-        Person = object()
-        scope = {'Person': Person}
-        node = astroid.extract_node('Person')
-        assert pylint_protobuf._typeof(scope, node) is Person
-
-    def test_new_slice_list(self):
-        Person = object()
-        scope = {'Person': Person}
-        node = astroid.extract_node('[Person][0]')
-        assert pylint_protobuf._typeof(scope, node) is Person
-
-    def test_new_slice_dict(self):
-        Person = object()
-        scope = {'Person': Person}
-        node = astroid.extract_node('{"a": Person}["a"]')
-        assert pylint_protobuf._typeof(scope, node) is Person
-
-    def test_new_slice_nested_dict(self):
-        Person = object()
-        scope = {'Person': Person}
-        node = astroid.extract_node("""
-        {
-            "outer": {
-                "inner": Person
-            }
-        }["outer"]["inner"]
-        """)
-        assert pylint_protobuf._typeof(scope, node) is Person
-
-    @pytest.mark.skip(reason='changes in typeof')
-    def test_new_typeof_call(self):
-        Person = object()
-        scope = {'Person': pylint_protobuf.TypeClass(Person)}
-        node = astroid.extract_node("""
-        Person()
-        """)
-        assert pylint_protobuf._typeof(scope, node) is Person
-
     def test_new_assign(self):
         Person = object()
         scope = {'Person': Person}
@@ -466,15 +427,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         msg, _, node = messages[0]
         assert msg == 'protobuf-undefined-attribute'
         assert node == assign.targets[0]
-
-    @pytest.mark.skip(reason='changes in typeof')
-    def test_new_typeof_import(self):
-        Person = pylint_protobuf.TypeClass(object())
-        mod_globals = {'module_pb2.Person': Person}
-        module_pb2 = pylint_protobuf.parse_pb2.Module('module_pb2', mod_globals)
-        scope = {'module_pb2': module_pb2}
-        node = astroid.extract_node('module_pb2.Person')
-        assert pylint_protobuf._typeof(scope, node) is Person
 
     @pytest.mark.skip(reason='changes in import')
     def test_new_import(self, tmpdir, monkeypatch):
