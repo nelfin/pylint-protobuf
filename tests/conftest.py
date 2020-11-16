@@ -75,7 +75,8 @@ def proto_builder(tmpdir, monkeypatch):
 
         monkeypatch.syspath_prepend(tmpdir)
         return '{}_pb2'.format(name)
-    return proto
+    yield proto
+    tmpdir.remove()
 
 
 @pytest.fixture
