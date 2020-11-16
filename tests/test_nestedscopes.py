@@ -23,7 +23,8 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    # @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.skip(reason='fake_pb2 not supported')
     def test_aliasing_by_inner_class_does_not_warn(self):
         inner = astroid.extract_node("""
         from fake_pb2 import Foo
@@ -36,7 +37,8 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(inner.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    # @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.skip(reason='fake_pb2 not supported')
     def test_class_scope_closure_restores_warnings(self):
         outer = astroid.extract_node("""
         from fake_pb2 import Foo
@@ -52,7 +54,8 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(outer.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    # @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.skip(reason='fake_pb2 not supported')
     def test_alias_by_function_scope_does_not_warn(self):
         inner = astroid.extract_node("""
         from fake_pb2 import Foo
@@ -64,7 +67,8 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(inner.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    # @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.skip(reason='fake_pb2 not supported')
     def test_function_scope_closure_restores_warnings(self):
         outer = astroid.extract_node("""
         from fake_pb2 import Foo

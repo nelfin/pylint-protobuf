@@ -118,7 +118,8 @@ def _typeof(scope, node):
     elif isinstance(node, astroid.Subscript):
         return _typeof(scope, _slice(node))
     elif isinstance(node, astroid.Call):
-        return _instanceof(_typeof(scope, node.func))
+        # XXX: return _instanceof(_typeof(scope, node.func))
+        return _typeof(scope, node.func)
     elif isinstance(node, astroid.Const):
         return None
         # NOTE: not returning type(node.value) anymore as it breaks assumptions
@@ -131,11 +132,11 @@ def _typeof(scope, node):
         # namespace is something like a module or ClassDef that supports
         # getattr
         try:
-            attr = namespace.getattr(node.attrname)
+            return namespace.getattr(node.attrname)  # XXX: changed
         except AttributeError:
             return None
-        else:
-            return _typeof(scope, attr)
+        # else:
+        #     return _typeof(scope, attr)
     elif isinstance(node, (TypeClass, ClassDef)):
         return node
     else:

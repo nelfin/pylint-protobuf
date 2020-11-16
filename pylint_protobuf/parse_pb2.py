@@ -51,12 +51,13 @@ class Module(object):
         self.module_globals = module_globals
 
     def getattr(self, var):
-        qualified_name = '{}.{}'.format(self.original_name, var)
-        return self.module_globals.get(qualified_name)
+        # qualified_name = '{}.{}'.format(self.original_name, var)
+        return self.module_globals.get(var)  # XXX: changed
 
     @property
     def fields(self):
-        return [self.unqualified_name(k) for k in self.module_globals]
+        # return [self.unqualified_name(k) for k in self.module_globals]
+        return self.module_globals.keys()  # XXX: not using fully-qualified names
 
     @property
     def qualname(self):
@@ -308,47 +309,78 @@ def find_containing_types(mod_node):
 
 ###
 
+class DangerModule(object):
+    pass
+
+def danger_import_module(mod):
+    mod_globals, mod_locals = {}, {}
+    exec(mod.as_string(), mod_globals, mod_locals)  # XXX!!!
+    new_mod = DangerModule()
+    for key in mod_locals:
+        setattr(new_mod, key, mod_locals[key])
+    return new_mod
+
+class Message(object):
+    def __init__(self, qualname, fields):
+        self.qualname = qualname
+        self.fields = fields
+
+def qualname2(cls):
+    return '{}.{}'.format(cls.__module__, cls.__qualname__)
+
+def build_descriptor_proxy(cls):
+    desc = cls.DESCRIPTOR
+    fields = Message(qualname2(cls), dict(desc.fields_by_name))
+    return fields
+
+def load_descriptors(pymod, names):
+    fields = {}
+    for clsname in names:
+        fields[clsname] = build_descriptor_proxy(getattr(pymod, clsname))
+    return fields
+
+def likely_name(n):
+    return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR') and not n.endswith('_pb2')
 
 def import_module(mod, module_name, scope, imported_names):
     new_scope = scope.copy()
     del scope
-    inner_fields = find_fields_by_name(mod)
-    find_message_types_by_name(mod)
-    contained_types = find_containing_types(mod)
-
-    def likely_name(n):
-        # XXX: parse all fields for nested classes
-        #
-        # if imported_names:
-        #     # NOTE: only map aliases when mapping names to fields, not when
-        #     # checking mod.globals (since they haven't been renamed yet).
-        #     return any(n == name for name, _ in imported_names)
-        return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR')
+    # TODO: check *-import
+    names = [n for n in mod.globals.keys() if likely_name(n)]
+    try:
+        mod2 = danger_import_module(mod)
+        desc = load_descriptors(mod2, names=names)  # XXX: had hardcoded ['Person'] before
+    except:
+        return new_scope  # FIXME
+    #inner_fields = find_fields_by_name(mod)
+    #find_message_types_by_name(mod)
+    #contained_types = find_containing_types(mod)
 
     def qualified_name(n):
         return '{}.{}'.format(module_name, n)
 
     def unqualified_name(n):
-        return n[len(module_name)+1:]  # +1 = include dot
+        return n  # FIXME: n[len(module_name)+1:]  # +1 = include dot
 
-    new_names = {}
-    for original_name, nodes in mod.globals.items():
-        if likely_name(original_name):
-            # FIXME: multiple nodes, renamings?
-            imported_name = qualified_name(original_name)
-            fields = extract_fields(nodes[0], mod.globals, inner_fields,
-                                    imported_name, contained_types)
-            if fields is not None:
-                cls = ClassDef(fields, imported_name)
-                new_names[imported_name] = TypeClass(cls)
+    new_names = desc  # {}
+    # for original_name, nodes in mod.globals.items():
+    #     if likely_name(original_name):
+    #         # FIXME: multiple nodes, renamings?
+    #         imported_name = qualified_name(original_name)
+    #         fields = extract_fields(nodes[0], mod.globals, inner_fields,
+    #                                 imported_name, contained_types)
+    #         if fields is not None:
+    #             cls = ClassDef(fields, imported_name)
+    #             new_names[imported_name] = TypeClass(cls)
 
     new_scope[module_name] = Module(module_name, new_names)
     for name, alias in imported_names:  # check aliasing for ImportFrom
         if name == '*':
             for qualname in new_names:
                 new_scope[unqualified_name(qualname)] = new_names[qualname]
+            # TODO: del new_scope[module_name]
             break  # it's a SyntaxError to have other clauses with a *-import
         if alias is None:
             alias = name
-        new_scope[alias] = new_names[qualified_name(name)]
+        new_scope[alias] = new_names[name]  # qualified_name(name)]
     return new_scope

@@ -151,12 +151,12 @@ class TestEnumDefinitions(CheckerTestCase):
         """.format(nested_enum_mod)))
 
     @pytest.mark.xfail(reason='nested namespaces unimplemented')
-    def test_issue16_package_nested_enum_definition_warns(self, pacage_nested_enum_mod):
+    def test_issue16_package_nested_enum_definition_warns(self, package_nested_enum_mod):
         node = extract_node("""
             import {mod}
             {mod}.Message.should_warn
-        """.format(mod=nested_enum_mod))
-        msg = make_message(node, nested_enum_mod+'.Message', 'should_warn')
+        """.format(mod=package_nested_enum_mod))
+        msg = make_message(node, package_nested_enum_mod+'.Message', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue16_nested_enum_definition_warns(self, nested_enum_mod):
@@ -180,8 +180,8 @@ class TestEnumDefinitions(CheckerTestCase):
         node = extract_node("""
             import {mod}
             {mod}.UNO
-        """.format(mod=nested_enum_mod))
-        msg = make_message(node, nested_enum_mod, 'UNO')
+        """.format(mod=package_nested_enum_mod))
+        msg = make_message(node, package_nested_enum_mod, 'UNO')
         self.assert_adds_messages(node, msg)
 
     @pytest.mark.skipif(sys.version_info < (3, 0),
