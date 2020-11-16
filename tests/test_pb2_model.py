@@ -10,13 +10,13 @@ from pylint_protobuf.pb2_model import (
 
 @pytest.fixture
 def example_enum():
-    return Enum(ONE=EnumValue(1), TWO=EnumValue(2))
+    return Enum('Example', ONE=EnumValue(1), TWO=EnumValue(2))
 
 
 @pytest.fixture
 def example_message():
-    return Message(
-        Inner=Enum(INNER_VALUE=EnumValue(0)),
+    return Message('Outer',
+        Inner=Enum('Inner', INNER_VALUE=EnumValue(0)),
         INNER_VALUE=EnumValue(0)
     )
 
@@ -47,7 +47,7 @@ def test_mapping_attributes(example_enum, example_message):
 
 
 def test_message_enum_uplift(example_enum):
-    message = Message(Inner=example_enum)
+    message = Message('Outer', Inner=example_enum)
     assert 'ONE' in message
     assert 'TWO' in message
     assert message.ONE == example_enum.ONE
