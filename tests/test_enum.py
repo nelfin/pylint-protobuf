@@ -10,7 +10,7 @@ from conftest import CheckerTestCase, extract_node, make_message
 def enum_mod(proto_builder):
     return proto_builder("""
         syntax = "proto2";
-        package test;
+
         enum Variable {
           CONTINUOUS = 0;
           DISCRETE = 1;
@@ -22,7 +22,6 @@ def enum_mod(proto_builder):
 def nested_enum_mod(proto_builder):
     return proto_builder("""
         syntax = "proto2";
-        package test;
 
         enum Outer {
           UNDEFINED = 0;
@@ -44,7 +43,6 @@ def nested_enum_mod(proto_builder):
 def package_nested_enum_mod(proto_builder):
     return proto_builder("""
         syntax = "proto2";
-        package test;
 
         enum Outer {
           UNDEFINED = 0;
@@ -136,21 +134,18 @@ class TestEnumDefinitions(CheckerTestCase):
             {mod}.Message.Inner.UNO
         """.format(mod=nested_enum_mod)))
 
-    @pytest.mark.xfail(reason='nested namespaces unimplemented')
     def test_issue16_nested_enum_definition_no_errors(self, nested_enum_mod):
         self.assert_no_messages(extract_node("""
             import {mod}
             {mod}.Message.UNO
         """.format(mod=nested_enum_mod)))
 
-    @pytest.mark.xfail(reason='nested namespaces unimplemented')
     def test_fixme_issue16_nested_enum_definition_no_errors(self, nested_enum_mod):
         self.assert_no_messages(extract_node("""
             import {} as sut
             sut.Message.UNO
         """.format(nested_enum_mod)))
 
-    @pytest.mark.xfail(reason='nested namespaces unimplemented')
     def test_issue16_package_nested_enum_definition_warns(self, package_nested_enum_mod):
         node = extract_node("""
             import {mod}
@@ -175,7 +170,6 @@ class TestEnumDefinitions(CheckerTestCase):
         msg = make_message(node, nested_enum_mod, 'UNO')
         self.assert_adds_messages(node, msg)
 
-    @pytest.mark.xfail(reason='nested namespaces unimplemented')
     def test_issue16_package_missing_toplevel_enum(self, package_nested_enum_mod):
         node = extract_node("""
             import {mod}

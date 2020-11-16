@@ -105,3 +105,13 @@ class OldModule(object):
 
     def __repr__(self):
         return "Module({}, {})".format(self.original_name, self.module_globals)
+
+
+class ProtobufEnum(object):
+    def __init__(self, qualname, values):
+        self.qualname = qualname
+        self.values = values
+
+    @property
+    def fields(self):
+        return self.values.keys()

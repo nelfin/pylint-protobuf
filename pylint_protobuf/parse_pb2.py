@@ -2,9 +2,15 @@ from collections import defaultdict
 
 import astroid
 
+from google.protobuf.pyext._message import (
+    EnumDescriptor,
+    #MessageDescriptor,
+)  # FIXME: don't use here
+
 from .pb2_model import (
     OldModule as Module,
     NewMessage as Message,
+    ProtobufEnum,
 )
 
 
@@ -52,19 +58,25 @@ def danger_import_module(mod):
 def qualname2(cls):
     return '{}.{}'.format(cls.__module__, cls.__qualname__)
 
-def build_descriptor_proxy(cls):
+def build_descriptor_proxy(cls, module_name=None):
     desc = cls.DESCRIPTOR
-    fields = Message(qualname2(cls), dict(desc.fields_by_name))
-    return fields
+    if isinstance(desc, EnumDescriptor):
+        return ProtobufEnum(module_name + '.' + desc.name, dict(cls.items()))
+    else:  #elif isinstance(desc, MessageDescriptor):
+        return Message(qualname2(cls), dict(desc.fields_by_name))
 
-def load_descriptors(pymod, names):
+def load_descriptors(pymod, names, module_name=None):
     fields = {}
     for clsname in names:
-        fields[clsname] = build_descriptor_proxy(getattr(pymod, clsname))
+        val = getattr(pymod, clsname)
+        if isinstance(val, int):
+            fields[clsname] = val
+            continue  # FIXME: rename function?
+        fields[clsname] = build_descriptor_proxy(val, module_name)
     return fields
 
 def likely_name(n):
-    return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR') and not n.endswith('_pb2')
+    return not n.startswith('_') and n not in ('sys', 'DESCRIPTOR', 'enum_type_wrapper') and not n.endswith('_pb2')
 
 def import_module(mod, module_name, scope, imported_names):
     new_scope = scope.copy()
@@ -73,9 +85,10 @@ def import_module(mod, module_name, scope, imported_names):
     names = [n for n in mod.globals.keys() if likely_name(n)]
     try:
         mod2 = danger_import_module(mod)
-        desc = load_descriptors(mod2, names=names)  # XXX: had hardcoded ['Person'] before
+        desc = load_descriptors(mod2, names=names, module_name=module_name)  # XXX: had hardcoded ['Person'] before
     except:
-        return new_scope  # FIXME
+        raise
+        # return new_scope  # FIXME
 
     new_names = desc  # {}
     new_scope[module_name] = Module(module_name, new_names)

@@ -8,7 +8,8 @@ from conftest import CheckerTestCase, extract_node
 def nested_mod(proto_builder):
     return proto_builder("""
         syntax = "proto2";
-        package test;
+        package nested;
+
         message Outer {
           message Inner {
             required string inner_field = 1;
@@ -22,6 +23,8 @@ def nested_mod(proto_builder):
 def nested_plus_enum_mod(proto_builder):
     return proto_builder("""
         syntax = "proto2";
+        package nested_plus_enum;
+
         message Outer {
           enum InnerEnum {
             VALUE = 0;
