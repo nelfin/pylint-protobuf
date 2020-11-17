@@ -2,7 +2,7 @@ import pytest
 import astroid
 
 from pylint_protobuf.parse_pb2 import Module, TypeClass
-from pylint_protobuf.evaluation import resolve
+from pylint_protobuf.evaluation import resolve, Scope
 
 
 def test_resolve_name():
@@ -50,3 +50,24 @@ def test_resolve_import():
     scope = {'module_pb2': module_pb2}
     node = astroid.extract_node('module_pb2.Person')
     assert resolve(scope, node) is Person
+
+def test_scope_assign():
+    scope = Scope()
+    scope.assign('x', 123)
+    assert scope['x'] == 123
+    scope.assign('x', 456)
+    assert scope['x'] == 456
+
+def test_scope_push():
+    scope = Scope()
+    scope.assign('x', 123)
+    scope.push()
+    assert scope['x'] == 123
+
+def test_scope_push_shadows():
+    scope = Scope()
+    scope.assign('x', 123)
+    scope.push({'x': 456})
+    assert scope['x'] == 456
+    scope.pop()
+    assert scope['x'] == 123

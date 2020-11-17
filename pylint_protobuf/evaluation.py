@@ -1,6 +1,43 @@
+from typing import Any, Optional
+
 import astroid
 
 from .parse_pb2 import ClassDef, TypeClass
+
+class Scope(object):
+    __slots__ = ('_scope',)
+
+    def __init__(self):
+        self._scope = [{}]
+
+    @property
+    def current(self):
+        # type: () -> dict
+        return self._scope[-1]
+
+    def __getitem__(self, item):
+        # type: (str) -> Any
+        for frame in self._scope[::-1]:
+            try:
+                return frame[item]
+            except KeyError:
+                pass
+
+    def assign(self, lhs, rhs):
+        # type: (str, Any) -> None
+        self.current[lhs] = rhs
+
+    def push(self, d=None):
+        # type: (Optional[dict]) -> Scope
+        if d is None:
+            d = {}
+        assert isinstance(d, dict)
+        self._scope.append(d)
+        return self
+
+    def pop(self):
+        # type: () -> dict
+        return self._scope.pop()
 
 
 def resolve(scope, node):
