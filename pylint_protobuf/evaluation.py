@@ -69,6 +69,20 @@ def evaluate(scope, expr):
     else:
         raise NotImplementedError()
 
+def assign(scope, lhs, rhs):
+    # type: (Scope, astroid.AssignName, Any) -> Scope
+    assert isinstance(lhs, astroid.AssignName)
+    scope.assign(lhs.name, evaluate(scope, rhs))
+    return scope
+
+def assignattr(scope, lhs, rhs):
+    # type: (Scope, astroid.AssignAttr, Any) -> Scope
+    assert isinstance(lhs, astroid.AssignAttr)
+    obj = evaluate(scope, lhs.expr)
+    val = evaluate(scope, rhs)
+    setattr(obj, lhs.attrname, val)  # FIXME: hmmmm...
+    return scope
+
 def resolve(scope, node):
     """
     typeof ::

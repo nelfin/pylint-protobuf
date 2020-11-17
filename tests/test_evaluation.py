@@ -1,8 +1,14 @@
-import pytest
 import astroid
+import pytest
 
+from pylint_protobuf.evaluation import (
+    assign,
+    assignattr,
+    resolve,
+    evaluate,
+    Scope,
+)
 from pylint_protobuf.parse_pb2 import Module, TypeClass
-from pylint_protobuf.evaluation import resolve, evaluate, Scope
 
 
 def test_resolve_name():
@@ -120,3 +126,50 @@ def test_evaluate_recursive_top_attributeerror():
     node = astroid.extract_node('missing.attr')
     with pytest.raises(KeyError):
         evaluate(scope, node)  # Would rather it didn't raise
+
+def test_assign_renaming():
+    scope = Scope({'x': 123})
+    node = astroid.extract_node('x')
+    assert evaluate(scope, node) == 123
+    assign_node = astroid.extract_node('x = 456')
+    lhs, rhs = assign_node.targets[0], assign_node.value
+    assign(scope, lhs, rhs)
+    assert evaluate(scope, node) == 456
+
+def test_assignattr_renaming():
+    class Obj(object):
+        attr = 'red'
+    scope = Scope({'obj': Obj()})
+    node = astroid.extract_node('obj.attr')
+    assert evaluate(scope, node) == 'red'
+    assign_node = astroid.extract_node('obj.attr = "blue"')
+    lhs, rhs = assign_node.targets[0], assign_node.value
+    assignattr(scope, lhs, rhs)
+    assert evaluate(scope, node) == 'blue'
+
+def test_assignattr_recursive_attributes():
+    class Inner(object):
+        attr = 'red'
+    class Outer(object):
+        inner = Inner()
+    scope = Scope({'outer': Outer()})
+    node = astroid.extract_node('outer.inner.attr')
+    assign_node = astroid.extract_node('outer.inner.attr = "blue"')
+    lhs, rhs = assign_node.targets[0], assign_node.value
+    assignattr(scope, lhs, rhs)
+    assert evaluate(scope, node) == 'blue'
+
+def test_assignattr_swap_out_object():
+    class Inner(object):
+        attr = 'red'
+    class Outer(object):
+        inner = Inner()
+    scope = Scope({'outer': Outer()})
+    node = astroid.extract_node('outer.inner.attr')
+    assign_node = astroid.extract_node('outer.inner = "seeya"')
+    lhs, rhs = assign_node.targets[0], assign_node.value
+    assignattr(scope, lhs, rhs)
+    with pytest.raises(AttributeError):
+        evaluate(scope, node)
+    node = astroid.extract_node('outer.inner')
+    assert evaluate(scope, node) == 'seeya'
