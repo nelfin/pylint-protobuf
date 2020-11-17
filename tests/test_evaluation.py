@@ -75,30 +75,29 @@ def test_scope_push_shadows():
     scope.pop()
     assert scope['x'] == 123
 
+def evaluate_str(scope, expr_str):
+    return evaluate(scope, astroid.extract_node(expr_str))
+
 def test_evaluate_name():
     scope = Scope({'x': 123})
-    node = astroid.extract_node('x')
-    assert evaluate(scope, node) == 123
+    assert evaluate_str(scope, 'x') == 123
 
 def test_evaluate_constant():
     scope = Scope({'x': 123})
-    node = astroid.extract_node('456')
-    assert evaluate(scope, node) == 456
+    assert evaluate_str(scope, '456') == 456
 
 def test_evaluate_attribute():
     class Obj(object):
         attr = 'attribute'
     scope = Scope({'name': Obj()})
-    node = astroid.extract_node('name.attr')
-    assert evaluate(scope, node) == 'attribute'
+    assert evaluate_str(scope, 'name.attr') == 'attribute'
 
 def test_evaluate_attributeerror():
     class Obj(object):
         attr = 'attribute'
     scope = Scope({'name': Obj()})
-    node = astroid.extract_node('name.missing')
     with pytest.raises(AttributeError):
-        evaluate(scope, node)  # Would rather it didn't raise
+        evaluate_str(scope, 'name.missing')  # Would rather it didn't raise
 
 def test_evaluate_recursive_attributes():
     class Inner(object):
@@ -106,8 +105,7 @@ def test_evaluate_recursive_attributes():
     class Outer(object):
         inner = Inner()
     scope = Scope({'outer': Outer()})
-    node = astroid.extract_node('outer.inner.attr')
-    assert evaluate(scope, node) == 'recursive_attribute'
+    assert evaluate_str(scope, 'outer.inner.attr') == 'recursive_attribute'
 
 def test_evaluate_recursive_attributeerror():
     class Inner(object):
@@ -115,37 +113,41 @@ def test_evaluate_recursive_attributeerror():
     class Outer(object):
         inner = Inner()
     scope = Scope({'outer': Outer()})
-    node = astroid.extract_node('outer.missing.attr')
     with pytest.raises(AttributeError):
-        evaluate(scope, node)  # Would rather it didn't raise
+        evaluate_str(scope, 'outer.missing.attr')  # Would rather it didn't raise
 
 def test_evaluate_recursive_top_attributeerror():
     class Obj(object):
         attr = 'one-two-three'
     scope = Scope({'name': Obj()})
-    node = astroid.extract_node('missing.attr')
     with pytest.raises(KeyError):
-        evaluate(scope, node)  # Would rather it didn't raise
+        evaluate_str(scope, 'missing.attr')  # Would rather it didn't raise
+
+def assign_str(scope, expr_str):
+    assign_node = astroid.extract_node(expr_str)
+    assert isinstance(assign_node, astroid.Assign)
+    lhs, rhs = assign_node.targets[0], assign_node.value
+    return assign(scope, lhs, rhs)
 
 def test_assign_renaming():
     scope = Scope({'x': 123})
-    node = astroid.extract_node('x')
-    assert evaluate(scope, node) == 123
-    assign_node = astroid.extract_node('x = 456')
+    assert evaluate_str(scope, 'x') == 123
+    assign_str(scope, 'x = 456')
+    assert evaluate_str(scope, 'x') == 456
+
+def assignattr_str(scope, expr_str):
+    assign_node = astroid.extract_node(expr_str)
+    assert isinstance(assign_node, astroid.Assign)
     lhs, rhs = assign_node.targets[0], assign_node.value
-    assign(scope, lhs, rhs)
-    assert evaluate(scope, node) == 456
+    return assignattr(scope, lhs, rhs)
 
 def test_assignattr_renaming():
     class Obj(object):
         attr = 'red'
     scope = Scope({'obj': Obj()})
-    node = astroid.extract_node('obj.attr')
-    assert evaluate(scope, node) == 'red'
-    assign_node = astroid.extract_node('obj.attr = "blue"')
-    lhs, rhs = assign_node.targets[0], assign_node.value
-    assignattr(scope, lhs, rhs)
-    assert evaluate(scope, node) == 'blue'
+    assert evaluate_str(scope, 'obj.attr') == 'red'
+    assignattr_str(scope, 'obj.attr = "blue"')
+    assert evaluate_str(scope, 'obj.attr') == 'blue'
 
 def test_assignattr_recursive_attributes():
     class Inner(object):
@@ -153,11 +155,8 @@ def test_assignattr_recursive_attributes():
     class Outer(object):
         inner = Inner()
     scope = Scope({'outer': Outer()})
-    node = astroid.extract_node('outer.inner.attr')
-    assign_node = astroid.extract_node('outer.inner.attr = "blue"')
-    lhs, rhs = assign_node.targets[0], assign_node.value
-    assignattr(scope, lhs, rhs)
-    assert evaluate(scope, node) == 'blue'
+    assignattr_str(scope, 'outer.inner.attr = "blue"')
+    assert evaluate_str(scope, 'outer.inner.attr') == 'blue'
 
 def test_assignattr_swap_out_object():
     class Inner(object):
@@ -165,11 +164,7 @@ def test_assignattr_swap_out_object():
     class Outer(object):
         inner = Inner()
     scope = Scope({'outer': Outer()})
-    node = astroid.extract_node('outer.inner.attr')
-    assign_node = astroid.extract_node('outer.inner = "seeya"')
-    lhs, rhs = assign_node.targets[0], assign_node.value
-    assignattr(scope, lhs, rhs)
+    assignattr_str(scope, 'outer.inner = "seeya"')
     with pytest.raises(AttributeError):
-        evaluate(scope, node)
-    node = astroid.extract_node('outer.inner')
-    assert evaluate(scope, node) == 'seeya'
+        evaluate_str(scope, 'outer.inner.attr')
+    assert evaluate_str(scope, 'outer.inner') == 'seeya'
