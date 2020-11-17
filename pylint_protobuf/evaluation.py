@@ -22,6 +22,7 @@ class Scope(object):
                 return frame[item]
             except KeyError:
                 pass
+        raise KeyError(item)
 
     def assign(self, lhs, rhs):
         # type: (str, Any) -> None
@@ -39,6 +40,32 @@ class Scope(object):
         # type: () -> dict
         return self._scope.pop()
 
+    def __repr__(self):
+        return 'Scope({})'.format(self._scope)
+
+def resolve_name(scope, lhs):
+    # type: (Scope, astroid.Name) -> Any
+    return scope[lhs.name]
+
+def resolve_constant(lhs):
+    # type: (astroid.Const) -> Any
+    return next(lhs.infer()).value
+
+def resolve_attribute(scope, expr):
+    # type: (Scope, astroid.Attribute) -> Any
+    lhs = evaluate(scope, expr.expr)
+    return getattr(lhs, expr.attrname)
+
+def evaluate(scope, expr):
+    # type: (Scope, astroid.node_classes.NodeNG) -> Any
+    if isinstance(expr, astroid.Name):
+        return resolve_name(scope, expr)
+    elif isinstance(expr, astroid.Const):
+        return resolve_constant(expr)
+    elif isinstance(expr, astroid.Attribute):
+        return resolve_attribute(scope, expr)
+    else:
+        raise NotImplementedError()
 
 def resolve(scope, node):
     """
