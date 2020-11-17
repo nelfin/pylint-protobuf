@@ -52,51 +52,44 @@ def test_resolve_import():
     assert resolve(scope, node) is Person
 
 def test_scope_assign():
-    scope = Scope()
-    scope.assign('x', 123)
+    scope = Scope({'x': 123})
     assert scope['x'] == 123
     scope.assign('x', 456)
     assert scope['x'] == 456
 
 def test_scope_push():
-    scope = Scope()
-    scope.assign('x', 123)
+    scope = Scope({'x': 123})
     scope.push()
     assert scope['x'] == 123
 
 def test_scope_push_shadows():
-    scope = Scope()
-    scope.assign('x', 123)
+    scope = Scope({'x': 123})
     scope.push({'x': 456})
     assert scope['x'] == 456
     scope.pop()
     assert scope['x'] == 123
 
 def test_evaluate_name():
-    scope = Scope()
-    scope.assign('x', 123)
+    scope = Scope({'x': 123})
     node = astroid.extract_node('x')
     assert evaluate(scope, node) == 123
 
 def test_evaluate_constant():
-    scope = Scope()
-    scope.assign('x', 123)
+    scope = Scope({'x': 123})
     node = astroid.extract_node('456')
     assert evaluate(scope, node) == 456
 
 def test_evaluate_attribute():
     class Obj(object):
         attr = 'attribute'
-    scope = Scope()
-    scope.assign('name', Obj())
+    scope = Scope({'name': Obj()})
     node = astroid.extract_node('name.attr')
     assert evaluate(scope, node) == 'attribute'
 
 def test_evaluate_attributeerror():
     class Obj(object):
         attr = 'attribute'
-    scope = Scope()
-    scope.assign('name', Obj())
+    scope = Scope({'name': Obj()})
     node = astroid.extract_node('name.missing')
     with pytest.raises(AttributeError):
         evaluate(scope, node)  # Would rather it didn't raise
@@ -106,8 +99,7 @@ def test_evaluate_recursive_attributes():
         attr = 'recursive_attribute'
     class Outer(object):
         inner = Inner()
-    scope = Scope()
-    scope.assign('outer', Outer())
+    scope = Scope({'outer': Outer()})
     node = astroid.extract_node('outer.inner.attr')
     assert evaluate(scope, node) == 'recursive_attribute'
 
@@ -116,8 +108,7 @@ def test_evaluate_recursive_attributeerror():
         attr = 'recursive_attribute'
     class Outer(object):
         inner = Inner()
-    scope = Scope()
-    scope.assign('outer', Outer())
+    scope = Scope({'outer': Outer()})
     node = astroid.extract_node('outer.missing.attr')
     with pytest.raises(AttributeError):
         evaluate(scope, node)  # Would rather it didn't raise
@@ -125,8 +116,7 @@ def test_evaluate_recursive_attributeerror():
 def test_evaluate_recursive_top_attributeerror():
     class Obj(object):
         attr = 'one-two-three'
-    scope = Scope()
-    scope.assign('name', Obj())
+    scope = Scope({'name': Obj()})
     node = astroid.extract_node('missing.attr')
     with pytest.raises(KeyError):
         evaluate(scope, node)  # Would rather it didn't raise

@@ -7,8 +7,10 @@ from .parse_pb2 import ClassDef, TypeClass
 class Scope(object):
     __slots__ = ('_scope',)
 
-    def __init__(self):
-        self._scope = [{}]
+    def __init__(self, initial_scope=None):
+        if initial_scope is None:
+            initial_scope = {}
+        self._scope = [initial_scope]
 
     @property
     def current(self):
