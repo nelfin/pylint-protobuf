@@ -12,22 +12,24 @@ def transform_enum(desc):
     raise NotImplementedError()
 
 
-def transform_message(desc):
-    # type: (Any) -> astroid.ClassDef
+def transform_message(desc, name):
+    # type: (Any, str) -> astroid.ClassDef
+    if name is None:
+        name = desc.name
     cls = astroid.extract_node("""
     class {name}(object):
         __slots__ = {body}
-    """.format(name=desc.name, body=repr(tuple(desc.fields_by_name))))
+    """.format(name=name, body=repr(tuple(desc.fields_by_name))))
     return cls
 
 
-def transform_descriptor_to_class(cls):
-    # type: (Any) -> astroid.ClassDef
+def transform_descriptor_to_class(cls, alias=None):
+    # type: (Any, str) -> astroid.ClassDef
     desc = cls.DESCRIPTOR
     if isinstance(desc, EnumDescriptor):
         return transform_enum(desc)
     elif isinstance(desc, Descriptor):
-        return transform_message(desc)
+        return transform_message(desc, alias)
     else:
         raise NotImplementedError()
 
@@ -81,7 +83,7 @@ def transform_importfrom(node):
         raise NotImplementedError()
     for name, alias in names:
         cls = mod_node_to_class(mod, name)
-        cls_def = transform_descriptor_to_class(cls)
+        cls_def = transform_descriptor_to_class(cls, alias)
     return cls_def
 
 
