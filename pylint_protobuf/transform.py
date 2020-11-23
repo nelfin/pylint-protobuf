@@ -48,16 +48,6 @@ def mod_node_to_class(mod, name):
     return ns[name]
 
 
-def is_some_protobuf_module(node):
-    # type: (astroid.node_classes.NodeNG) -> bool
-    assert isinstance(node, (astroid.Import, astroid.ImportFrom))
-    if isinstance(node, astroid.ImportFrom):
-        return node.modname.endswith('_pb2')
-    elif isinstance(node, astroid.Import):
-        return any(modname.endswith('_pb2') for modname, _ in node.names)
-    return False
-
-
 def transform_import(node):
     # have to transform imports into class definitions
     # or is there a way to modify the inferred value of the names when doing a function call?
@@ -70,37 +60,34 @@ def transform_import(node):
     raise NotImplementedError()
 
 
-def transform_importfrom(node):
-    # type: (astroid.ImportFrom) -> astroid.ClassDef
+def transform_module(mod):
+    # type: (astroid.Module) -> astroid.Module
 
-    # turn an ImportFrom into a series of class definitions, one for each imported name (aliased appropriately)
-    # or all of them in the case of a *-import
-    modname = node.modname
-    names = node.names
-    mod = node.do_import_module()  # type: astroid.Module
-    if ('*', None) in names:
-        names = mod.wildcard_import_names()
-        raise NotImplementedError()
-    for name, alias in names:
+    for name in mod.wildcard_import_names():
         cls = mod_node_to_class(mod, name)
-        cls_def = transform_descriptor_to_class(cls, alias)
-    return cls_def
+        try:
+            cls_def = transform_descriptor_to_class(cls)
+            mod.locals[name] = [cls_def]
+        except (NotImplementedError, AttributeError):
+            pass
+
+    # TODO: multiple nodes returned for multiple classdefs
+
+    return mod
 
 
-def test_transform():
-    MANAGER.register_transform(astroid.ImportFrom, transform_importfrom, is_some_protobuf_module)
-    node = astroid.extract_node("from fixture.foo_pb2 import Message")
-    pass
-
+def is_some_protobuf_module(node):
+    # type: (astroid.Module) -> bool
+    modname = node.name
+    return modname.endswith('_pb2') and not modname.startswith('google.')
 
 @astroid.inference_tip
-def _importfrom_inference(node, _context=None):
-    return iter([transform_importfrom(node)])
+def _module_inference(node, _context=None):
+    return iter([transform_module(node)])
 
 
 def register(_):
     pass
 
 
-# MANAGER.register_transform(astroid.Import, _import_inference, is_some_protobuf_module)
-MANAGER.register_transform(astroid.ImportFrom, _importfrom_inference, is_some_protobuf_module)
+MANAGER.register_transform(astroid.Module, _module_inference, is_some_protobuf_module)
