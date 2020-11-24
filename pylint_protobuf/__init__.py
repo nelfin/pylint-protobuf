@@ -96,6 +96,8 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._disable('no-member', node.lineno)  # Should always be checked by us instead
         fields = frozenset(slot.value for slot in cls_def.slots())  # TODO: cache?
         if node.attrname not in fields:
+            if node.attrname in PROTOBUF_IMPLICIT_ATTRS:
+                return
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
             self._disable('assigning-non-slot', node.lineno)
 
