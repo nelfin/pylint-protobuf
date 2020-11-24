@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from typing import Union
+
 import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
@@ -61,73 +63,6 @@ def wellknowntype(modname):
            (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
 
 
-def _assignattr(scope, node):
-    """
-    assignattr ::
-        scope : Name -> Maybe[Type]
-        node : AssignAttr
-        -> Bool, [Warning]
-    """
-    assert isinstance(node, (astroid.Attribute, astroid.AssignAttr))
-    expr, attr = node.expr, node.attrname
-    expr_type = _typeof(scope, expr)
-    if expr_type is None:
-        return True, []  # not something we're tracking?
-    try:  # ClassDef, Module, TypeClass
-        fields, qualname = expr_type.fields, expr_type.qualname
-    except AttributeError:
-        return True, []  # unknown expression type
-    if fields is None:
-        # assert False, "type fields missing for {!r}".format(expr_type)
-        return False, []
-    if attr not in fields and attr not in PROTOBUF_IMPLICIT_ATTRS:
-        msg = ('protobuf-undefined-attribute', (attr, qualname), node)
-        return False, [msg]
-    return False, []
-
-
-def visit_assign_node(scope, node):
-    assert isinstance(node, (astroid.Assign, astroid.AnnAssign))
-    new_scope, old_scope = scope.copy(), scope.copy()
-    del scope
-    value, messages = node.value, []
-    if isinstance(node, astroid.AnnAssign):
-        targets = [node.target]
-    else:
-        targets = node.targets
-    for target in targets:
-        if isinstance(target, astroid.AssignName):
-            # NOTE: we still use old_scope here for every target here since
-            # locals is not updated until the end of the assignment, i.e.
-            # foo.ref = foo = Foo() will trigger a NameError if foo is not
-            # already in scope
-            new_scope.update(_assign(old_scope, target, value))
-        elif isinstance(target, astroid.AssignAttr):
-            skip, m = _assignattr(old_scope, target)
-            if not skip:
-                messages.extend(m)
-        else:
-            # assert False, "unexpected case like Subscript, tuple-unpacking etc."
-            return old_scope, []  # TODO
-    return new_scope, messages
-
-
-def visit_attribute(scope, node):
-    assert isinstance(node, astroid.Attribute)
-    skip, messages = _assignattr(scope, node)
-    if skip:
-        return [], []
-    suppressions = []
-    if not messages:
-        suppressions.append(node)
-    return messages, suppressions
-
-
-def issubset(left, right):
-    """A subset relation for dictionaries"""
-    return set(left.keys()) <= set(right.keys())
-
-
 class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
     msgs = MESSAGES
@@ -136,17 +71,22 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def __init__(self, linter):
         self.linter = linter
-        self._scope = None
 
-    def visit_module(self, _):
-        self._scope = {}
-
-    def leave_module(self, _):
-        self._scope = {}
-
+    @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):
         # type: (astroid.AssignAttr) -> None
+        self._assignattr(node)
+
+    @utils.check_messages('protobuf-undefined-attribute')
+    def visit_attribute(self, node):
+        # type: (astroid.Attribute) -> None
+        self._assignattr(node)
+
+    def _assignattr(self, node):
+        # type: (Union[astroid.Attribute, astroid.AssignAttr]) -> None
         val = node.expr.inferred()[0]  # FIXME: may be empty
+        if not hasattr(val, '_proxied'):
+            return
         cls_def = val._proxied  # type: astroid.ClassDef
         if not getattr(cls_def, '_is_protobuf_class', False):
             return
@@ -154,16 +94,6 @@ class ProtobufDescriptorChecker(BaseChecker):
         if node.attrname not in fields:
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
             self._disable('assigning-non-slot', node.lineno)
-
-    @utils.check_messages('protobuf-undefined-attribute')
-    def visit_attribute(self, node):
-        # TODO
-        messages, suppressions = visit_attribute(self._scope, node)
-        for code, args, target in messages:
-            self.add_message(code, args=args, node=target)
-            self._disable('no-member', target.lineno)
-        for target in suppressions:
-            self._disable('no-member', target.lineno)
 
     def _disable(self, msgid, line, scope='module'):
         try:
