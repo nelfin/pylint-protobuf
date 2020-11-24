@@ -84,7 +84,10 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def _assignattr(self, node):
         # type: (Union[astroid.Attribute, astroid.AssignAttr]) -> None
-        val = node.expr.inferred()[0]  # FIXME: may be empty
+        try:
+            val = node.expr.inferred()[0]  # FIXME: may be empty
+        except astroid.InferenceError:
+            return  # TODO: warn or redo
         if not hasattr(val, '_proxied'):
             return
         cls_def = val._proxied  # type: astroid.ClassDef
