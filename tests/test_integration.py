@@ -34,7 +34,7 @@ def linter_factory():
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXPECTED_MSGS = [
-    pylint_protobuf.MESSAGES['E5901'][0] % ('should_warn', 'person_pb2.Person'),
+    pylint_protobuf.MESSAGES['E5901'][0] % ('should_warn', 'Person'),
     "Instance of 'Foo' has no 'renamed_should_warn' member",
 ]
 
@@ -46,4 +46,4 @@ def test_no_E1101_on_protobuf_classes(linter_factory):
     )
     linter.check([os.path.join(HERE, 'e1101.py')])
     actual_msgs = [message.msg for message in linter.reporter.messages]
-    assert sorted(EXPECTED_MSGS) == sorted(actual_msgs)
+    assert sorted(actual_msgs) == sorted(EXPECTED_MSGS)

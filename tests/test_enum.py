@@ -60,6 +60,7 @@ def package_nested_enum_mod(proto_builder):
     """, 'package.nested_enum')
 
 
+@pytest.mark.skip(reason='unimplemented in new transform')
 class TestEnumDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 

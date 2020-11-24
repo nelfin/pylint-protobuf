@@ -37,6 +37,7 @@ def nested_plus_enum_mod(proto_builder):
     """, 'nested_plus_enum')
 
 
+@pytest.mark.skip(reason='enums not yet supported')
 class TestNestedMessages(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 

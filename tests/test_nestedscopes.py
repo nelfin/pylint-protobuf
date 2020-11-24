@@ -18,7 +18,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         """)
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'innerclass_pb2.Person')
+            node=node.targets[0], args=('should_warn', 'Person')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
