@@ -61,34 +61,6 @@ def wellknowntype(modname):
            (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
 
 
-def _instanceof(typeclass):
-    """
-    instanceof ::
-        typeclass : TypeClass
-        -> Type
-    """
-    if typeclass is None:
-        return None
-    assert isinstance(typeclass, TypeClass)
-    return typeclass.instance()
-
-
-def _assign(scope, target, rhs):
-    """
-    assign ::
-        scope : Name -> Maybe[Type]
-        target : Name
-        rhs : Node
-        -> scope' : (Name -> Maybe[Type])
-    """
-    assert isinstance(target, astroid.AssignName)
-    new_scope = scope.copy()
-    del scope
-    new_type = _typeof(new_scope, rhs)
-    new_scope[target.name] = new_type
-    return new_scope
-
-
 def _assignattr(scope, node):
     """
     assignattr ::
@@ -151,41 +123,6 @@ def visit_attribute(scope, node):
     return messages, suppressions
 
 
-def import_(node, module_name, scope):
-    """
-    import ::
-        scope : Name -> Maybe[Type]
-        node : Import | ImportFrom
-        -> (scope' : Name -> Maybe[Type])
-    """
-    assert isinstance(node, (astroid.Import, astroid.ImportFrom))
-    old_scope, new_scope = scope.copy(), scope.copy()
-    del scope
-    try:
-        mod = node.do_import_module(module_name)
-    except (astroid.TooManyLevelsError, astroid.AstroidBuildingException):
-        assert not _MISSING_IMPORT_IS_ERROR, 'expected to import module "{}"'.format(module_name)
-        return new_scope
-    imported_names = []
-    if isinstance(node, astroid.ImportFrom):
-        imported_names = node.names
-    if mod.package:
-        for name, alias in imported_names:
-            mod2 = mod.import_module(name, relative_only=True)
-            new_scope = import_module_(mod2, name, new_scope, [])
-            if alias is not None and name in new_scope:
-                # modname not in new_scope implies that the module was not
-                # successfully imported
-                diff = new_scope[name]
-                del new_scope[name]
-                new_scope[alias] = diff
-                if name in old_scope:  # undo overwrite iff name was present
-                    new_scope[name] = old_scope[name]
-        return new_scope
-    else:
-        return import_module_(mod, module_name, new_scope, imported_names)
-
-
 def issubset(left, right):
     """A subset relation for dictionaries"""
     return set(left.keys()) <= set(right.keys())
@@ -207,64 +144,20 @@ class ProtobufDescriptorChecker(BaseChecker):
     def leave_module(self, _):
         self._scope = {}
 
-    def visit_import(self, node):
-        for modname, alias in node.names:
-            if wellknowntype(modname):
-                continue
-            if not modname.endswith('_pb2'):
-                continue
-            self._import_node(node, modname, alias)
-
-    def visit_importfrom(self, node):
-        if wellknowntype(node.modname):
-            return
-        if not node.modname.endswith('_pb2'):
-            for name, _ in node.names:
-                if wellknowntype(name):
-                    continue
-                # NOTE: aliasing of module imports is handled in import_
-                if name.endswith('_pb2'):
-                    self._import_node(node, node.modname)
-        else:
-            self._import_node(node, node.modname)
-
-    def _import_node(self, node, modname, alias=None):
-        old_scope = self._scope.copy()
-        new_scope = import_(node, modname, self._scope)
-        assert issubset(self._scope, new_scope)
-        if alias is not None and modname in new_scope:
-            # modname not in new_scope implies that the module was not
-            # successfully imported
-            diff = new_scope[modname]
-            del new_scope[modname]
-            new_scope[alias] = diff
-            if modname in old_scope:
-                new_scope[modname] = old_scope[modname]
-        self._scope = new_scope
-
-    @utils.check_messages('protobuf-undefined-attribute')
-    def visit_annassign(self, node):
-        self._visit_assign(node)
-
-    @utils.check_messages('protobuf-undefined-attribute')
-    def visit_assign(self, node):
-        self._visit_assign(node)
-
-    def _visit_assign(self, node):
-        new_scope, messages = visit_assign_node(self._scope, node)
-        assert issubset(self._scope, new_scope)
-        self._scope = new_scope
-        for code, args, target in messages:
-            self.add_message(code, args=args, node=target)
-
     def visit_assignattr(self, node):
-        pass
-
-    def visit_delattr(self, node):
-        pass
+        # type: (astroid.AssignAttr) -> None
+        val = node.expr.inferred()[0]  # FIXME: may be empty
+        cls_def = val._proxied  # type: astroid.ClassDef
+        if not getattr(cls_def, '_is_protobuf_class', False):
+            return
+        fields = frozenset(slot.value for slot in cls_def.slots())  # TODO: cache?
+        if node.attrname not in fields:
+            self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
+            self._disable('assigning-non-slot', node.lineno)
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_attribute(self, node):
+        # TODO
         messages, suppressions = visit_attribute(self._scope, node)
         for code, args, target in messages:
             self.add_message(code, args=args, node=target)
@@ -280,4 +173,7 @@ class ProtobufDescriptorChecker(BaseChecker):
 
 
 def register(linter):
+    from astroid import MANAGER
+    from pylint_protobuf.transform import transform_module, is_some_protobuf_module
+    MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)
     linter.register_checker(ProtobufDescriptorChecker(linter))

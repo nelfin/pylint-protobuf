@@ -67,11 +67,10 @@ def transform_module(mod):
         cls = mod_node_to_class(mod, name)
         try:
             cls_def = transform_descriptor_to_class(cls)
+            cls_def._is_protobuf_class = True
             mod.locals[name] = [cls_def]
         except (NotImplementedError, AttributeError):
             pass
-
-    # TODO: multiple nodes returned for multiple classdefs
 
     return mod
 
@@ -80,14 +79,3 @@ def is_some_protobuf_module(node):
     # type: (astroid.Module) -> bool
     modname = node.name
     return modname.endswith('_pb2') and not modname.startswith('google.')
-
-@astroid.inference_tip
-def _module_inference(node, _context=None):
-    return iter([transform_module(node)])
-
-
-def register(_):
-    pass
-
-
-MANAGER.register_transform(astroid.Module, _module_inference, is_some_protobuf_module)
