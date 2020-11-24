@@ -93,6 +93,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         cls_def = val._proxied  # type: astroid.ClassDef
         if not getattr(cls_def, '_is_protobuf_class', False):
             return
+        self._disable('no-member', node.lineno)  # Should always be checked by us instead
         fields = frozenset(slot.value for slot in cls_def.slots())  # TODO: cache?
         if node.attrname not in fields:
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
