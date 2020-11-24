@@ -109,7 +109,8 @@ class ProtobufDescriptorChecker(BaseChecker):
 
 
 def register(linter):
-    from astroid import MANAGER
-    from pylint_protobuf.transform import transform_module, is_some_protobuf_module
-    MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)
     linter.register_checker(ProtobufDescriptorChecker(linter))
+
+from astroid import MANAGER
+from pylint_protobuf.transform import transform_module, is_some_protobuf_module
+MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)
