@@ -72,6 +72,24 @@ class ProtobufDescriptorChecker(BaseChecker):
     def __init__(self, linter):
         self.linter = linter
 
+    def visit_import(self, node):
+        # type: (astroid.Import) -> None
+        for modname, _ in node.names:
+            self._check_import(node, modname)
+
+    def visit_importfrom(self, node):
+        # type: (astroid.ImportFrom) -> None
+        self._check_import(node, node.modname)
+
+    def _check_import(self, node, modname):
+        # type: (Union[astroid.Import, astroid.ImportFrom], str) -> None
+        if not _MISSING_IMPORT_IS_ERROR or not modname.endswith('_pb2'):
+            return  # only relevant when testing
+        try:
+            node.do_import_module(modname)
+        except astroid.AstroidBuildingError:
+            assert not _MISSING_IMPORT_IS_ERROR, 'expected to import module "{}"'.format(modname)
+
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):
         # type: (astroid.AssignAttr) -> None

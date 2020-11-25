@@ -10,7 +10,10 @@ import pylint_protobuf
 
 @pytest.fixture(autouse=False)
 def error_on_missing_modules():
+    oldval = pylint_protobuf._MISSING_IMPORT_IS_ERROR
     pylint_protobuf._MISSING_IMPORT_IS_ERROR = True
+    yield
+    pylint_protobuf._MISSING_IMPORT_IS_ERROR = oldval
 
 
 def _touch(fname):

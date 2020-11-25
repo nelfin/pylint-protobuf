@@ -424,6 +424,11 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with pytest.raises(AssertionError, match='expected to import module "missing_module_pb2"'):
             self.walk(node.root())
 
+    def test_issue6_from_importing_a_missing_module(self, error_on_missing_modules):
+        node = astroid.extract_node('from missing_module_pb2 import foo')
+        with pytest.raises(AssertionError, match='expected to import module "missing_module_pb2"'):
+            self.walk(node.root())
+
     def test_issue7_indexerror_on_slice_inference(self):
         node = astroid.extract_node("""
         foo = []
