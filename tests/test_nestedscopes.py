@@ -4,11 +4,20 @@ import pylint.testutils
 
 import pylint_protobuf
 
+@pytest.fixture
+def fake_pb2(proto_builder):
+    return proto_builder("""
+        syntax = "proto2";
+        package nestedscope;
+        message Foo {
+            required string something = 1;
+        }
+    """, 'fake')
 
 class TestNestedScopes(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.xfail(reason='scope and modules overwrite so last wins')
+    @pytest.mark.xfail(reason='inference error?')
     def test_many_imports_no_aliasing(self):
         node = astroid.extract_node("""
         import fixture.innerclass_pb2
@@ -23,9 +32,8 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    # @pytest.mark.xfail(reason='unimplemented')
-    @pytest.mark.skip(reason='fake_pb2 not supported')
-    def test_aliasing_by_inner_class_does_not_warn(self):
+    @pytest.mark.xfail(reason='actually this was an incorrect assumption, Foo is in the global scope')
+    def test_aliasing_by_inner_class_does_not_warn(self, fake_pb2, error_on_missing_modules):
         inner = astroid.extract_node("""
         from fake_pb2 import Foo
         class Outer:
@@ -37,9 +45,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(inner.root())
 
-    # @pytest.mark.xfail(reason='unimplemented')
-    @pytest.mark.skip(reason='fake_pb2 not supported')
-    def test_class_scope_closure_restores_warnings(self):
+    def test_class_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
         outer = astroid.extract_node("""
         from fake_pb2 import Foo
         class Outer:
@@ -54,9 +60,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(outer.root())
 
-    # @pytest.mark.xfail(reason='unimplemented')
-    @pytest.mark.skip(reason='fake_pb2 not supported')
-    def test_alias_by_function_scope_does_not_warn(self):
+    def test_alias_by_function_scope_does_not_warn(self, fake_pb2, error_on_missing_modules):
         inner = astroid.extract_node("""
         from fake_pb2 import Foo
         def func():
@@ -67,9 +71,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(inner.root())
 
-    # @pytest.mark.xfail(reason='unimplemented')
-    @pytest.mark.skip(reason='fake_pb2 not supported')
-    def test_function_scope_closure_restores_warnings(self):
+    def test_function_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
         outer = astroid.extract_node("""
         from fake_pb2 import Foo
         def func():
