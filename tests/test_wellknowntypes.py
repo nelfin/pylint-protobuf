@@ -35,7 +35,7 @@ SAMPLE_WKTS = [
       'FromSeconds',
       'ToTimedelta',
       'FromTimedelta']),
-    ('fieldmask_pb2',
+    ('field_mask_pb2',
      'FieldMask',
      ['ToJsonString',
       'FromJsonString',
@@ -53,9 +53,6 @@ SAMPLE_WKTS = [
       'get_or_create_list',
       'get_or_create_struct',
       'update']),
-    ('listvalue_pb2',
-     'ListValue',
-     ['append', 'extend', 'items', 'add_struct', 'add_list'])
 ]
 
 
@@ -63,7 +60,7 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
-    def test_import_wkt_no_warnings(self, module, wkt, fields):
+    def test_import_wkt_no_warnings(self, module, wkt, fields, error_on_missing_modules):
         for field in fields:
             node = astroid.extract_node("""
             from google.protobuf.{module} import {wkt}
@@ -74,7 +71,7 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
                 self.walk(node.root())
 
     @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
-    def test_import_wkt_as_module_no_warnings(self, module, wkt, fields):
+    def test_import_wkt_as_module_no_warnings(self, module, wkt, fields, error_on_missing_modules):
         for field in fields:
             node = astroid.extract_node("""
             from google.protobuf import {module}

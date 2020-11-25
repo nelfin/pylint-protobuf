@@ -50,11 +50,14 @@ PROTOBUF_IMPLICIT_ATTRS = [
 ]
 WELLKNOWNTYPE_MODULES = [
     'any_pb2',
-    'timestamp_pb2',
+    'descriptor_pb2',
     'duration_pb2',
-    'fieldmask_pb2',
+    'empty_pb2',
+    'field_mask_pb2',
     'struct_pb2',
-    'listvalue_pb2',
+    'timestamp_pb2',
+    'type_pb2',
+    'wrappers_pb2',
 ]
 
 
