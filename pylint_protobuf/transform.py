@@ -1,8 +1,17 @@
-from functools import lru_cache
-from typing import Any
+try:
+    from functools import lru_cache
+except ImportError:
+    def lru_cache(*args):
+        def wrapped(func):
+            return func
+        return wrapped
+try:
+    from typing import Any
+except ImportError:
+    pass
 
 import astroid
-from astroid import MANAGER
+
 from google.protobuf.pyext._message import Descriptor
 from google.protobuf.pyext._message import EnumDescriptor
 
