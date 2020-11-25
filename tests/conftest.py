@@ -61,15 +61,19 @@ def _prepare_package_path(path):
 
 
 @pytest.fixture
-def proto_builder(tmpdir, monkeypatch):
-    def proto(source, name='mod'):
+def proto_builder(tmpdir, monkeypatch, request):
+    def proto(source, name=None, preamble=None):
+        if name is None:
+            name = request.node.name
+        if preamble is None:
+            preamble = 'syntax = "proto2";\npackage {};\n'.format(name)
         path, module_name = _split_package_path(name)
         proto_name = '{}.proto'.format(module_name)
 
         old = tmpdir.chdir()
         _prepare_package_path(path)
         p = tmpdir.join(proto_name)
-        p.write(textwrap.dedent(source))
+        p.write(preamble + textwrap.dedent(source))
 
         try:
             check_call(['protoc', '--python_out={}'.format(path), proto_name])

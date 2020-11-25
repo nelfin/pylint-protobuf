@@ -7,12 +7,10 @@ import pylint_protobuf
 @pytest.fixture
 def fake_pb2(proto_builder):
     return proto_builder("""
-        syntax = "proto2";
-        package nestedscope;
         message Foo {
             required string something = 1;
         }
-    """, 'fake')
+    """)
 
 class TestNestedScopes(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
@@ -35,24 +33,24 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
     @pytest.mark.xfail(reason='actually this was an incorrect assumption, Foo is in the global scope')
     def test_aliasing_by_inner_class_does_not_warn(self, fake_pb2, error_on_missing_modules):
         inner = astroid.extract_node("""
-        from fake_pb2 import Foo
+        from {fake_pb2} import Foo
         class Outer:
             class Foo: pass
             def __init__(self):
                 inner = Foo()
                 inner.should_not_warn = 123  #@
-        """)
+        """.format(fake_pb2=fake_pb2))
         with self.assertNoMessages():
             self.walk(inner.root())
 
     def test_class_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
         outer = astroid.extract_node("""
-        from fake_pb2 import Foo
+        from {fake_pb2} import Foo
         class Outer:
             Foo = object
         outer = Foo()
         outer.should_warn = 123  #@
-        """)
+        """.format(fake_pb2=fake_pb2))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=outer.targets[0], args=('should_warn', 'Foo')
@@ -62,23 +60,23 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
 
     def test_alias_by_function_scope_does_not_warn(self, fake_pb2, error_on_missing_modules):
         inner = astroid.extract_node("""
-        from fake_pb2 import Foo
+        from {fake_pb2} import Foo
         def func():
             class Foo: pass
             inner = Foo()
             inner.should_not_warn = 123  #@
-        """)
+        """.format(fake_pb2=fake_pb2))
         with self.assertNoMessages():
             self.walk(inner.root())
 
     def test_function_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
         outer = astroid.extract_node("""
-        from fake_pb2 import Foo
+        from {fake_pb2} import Foo
         def func():
             Foo = object
         outer = Foo()
         outer.should_warn = 123  #@
-        """)
+        """.format(fake_pb2=fake_pb2))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=outer.targets[0], args=('should_warn', 'Foo')

@@ -7,12 +7,10 @@ from conftest import CheckerTestCase, make_message, extract_node
 @pytest.fixture
 def inner_mod(proto_builder):
     return proto_builder("""
-        syntax = "proto2";
-        package issue23;
         message Test {
             required int32 id = 1;
         }
-    """, 'issue23')
+    """)
 
 
 @pytest.fixture

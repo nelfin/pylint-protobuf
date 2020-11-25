@@ -12,12 +12,10 @@ from hypothesis import given, strategies as st
 @pytest.fixture
 def fake_pb2(proto_builder):
     return proto_builder("""
-        syntax = "proto2";
-
         message Foo {
           required string valid_field = 1;
         }
-    """, 'fake')
+    """, name='fake')
 
 
 class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
