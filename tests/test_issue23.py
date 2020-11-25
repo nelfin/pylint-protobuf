@@ -26,12 +26,11 @@ def outer_mod(inner_mod, module_builder):
 class TestReexportedNames(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.xfail(reason='unfixed issue #23')
     def test_reexported_protobuf_message_definition_warns(self, outer_mod):
         node = extract_node("""
             import outer
             t = outer.Test()
             t.should_warn = 123  #@
         """)
-        msg = make_message(node, 'outer.Test', 'should_warn')
+        msg = make_message(node.targets[0], 'Test', 'should_warn')
         self.assert_adds_messages(node, msg)
