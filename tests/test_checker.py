@@ -6,7 +6,6 @@ import astroid
 import pylint.testutils
 
 import pylint_protobuf
-import pylint_protobuf.parse_pb2
 
 from hypothesis import given, strategies as st
 

@@ -6,9 +6,6 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
-from .parse_pb2 import ClassDef, TypeClass, import_module as import_module_
-from .evaluation import resolve as _typeof, slice as _slice
-
 
 _MISSING_IMPORT_IS_ERROR = False
 BASE_ID = 59
