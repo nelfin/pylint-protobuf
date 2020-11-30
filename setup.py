@@ -23,7 +23,8 @@ setup(
     license='MIT',
     keywords=['pylint', 'plugin', 'protobuf'],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
+        'Programming Language :: Python :: 3'
         'Environment :: Console',
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Developers',

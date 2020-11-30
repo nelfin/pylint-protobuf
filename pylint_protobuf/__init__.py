@@ -1,9 +1,4 @@
-from __future__ import absolute_import
-
-try:
-    from typing import Union
-except ImportError:
-    pass
+from typing import Union
 
 import astroid
 from pylint.checkers import BaseChecker, utils

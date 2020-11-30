@@ -29,6 +29,10 @@ fields from Protobuf types.
     ------------------------------------
     Your code has been rated at -6.67/10
 
+## Supported Python Versions
+
+`pylint-protobuf` supports Python 3.5 at a minimum.
+
 ## Known Issues
 
 `pylint-protobuf` does not currently support the following concepts from the protobuf specification:

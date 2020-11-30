@@ -1,15 +1,5 @@
-try:
-    from functools import lru_cache
-except ImportError:
-    def lru_cache(*args):
-        def wrapped(func):
-            return func
-        return wrapped
-try:
-    from typing import Any, List, Tuple, Union
-except ImportError:
-    pass
-
+from functools import lru_cache
+from typing import Any, List, Tuple, Union
 import textwrap
 
 import astroid
