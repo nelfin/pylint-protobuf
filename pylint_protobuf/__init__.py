@@ -48,6 +48,9 @@ PROTOBUF_IMPLICIT_ATTRS = [
     'SetInParent',
     'WhichOneof',
 ]
+PROTOBUF_ENUM_IMPLICIT_ATTRS = [
+    'Value',
+]
 WELLKNOWNTYPE_MODULES = [
     'any_pb2',
     'descriptor_pb2',
@@ -109,18 +112,29 @@ class ProtobufDescriptorChecker(BaseChecker):
             val = node.expr.inferred()[0]  # FIXME: may be empty
         except astroid.InferenceError:
             return  # TODO: warn or redo
-        if not hasattr(val, '_proxied'):
+        if hasattr(val, '_proxied'):
+            cls_def = val._proxied  # type: astroid.ClassDef
+        elif isinstance(val, astroid.Module):
+            return self._check_module(val, node)  # FIXME: move
+        elif isinstance(val, astroid.ClassDef):
+            cls_def = val
+        else:
             return
-        cls_def = val._proxied  # type: astroid.ClassDef
         if not getattr(cls_def, '_is_protobuf_class', False):
             return
         self._disable('no-member', node.lineno)  # Should always be checked by us instead
-        fields = frozenset(slot.value for slot in cls_def.slots())  # TODO: cache?
-        if node.attrname not in fields:
-            if node.attrname in PROTOBUF_IMPLICIT_ATTRS:
+        if node.attrname not in cls_def._protobuf_fields:
+            if node.attrname in PROTOBUF_IMPLICIT_ATTRS + PROTOBUF_ENUM_IMPLICIT_ATTRS:  # FIXME: move to definition
                 return
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
             self._disable('assigning-non-slot', node.lineno)
+
+    def _check_module(self, mod, node):
+        # type: (astroid.Module, astroid.Attribute) -> None
+        if not is_some_protobuf_module(mod):
+            return
+        if node.attrname not in mod.locals:
+            self.add_message('protobuf-undefined-attribute', args=(node.attrname, mod.name), node=node)
 
     def _disable(self, msgid, line, scope='module'):
         try:

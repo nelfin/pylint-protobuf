@@ -9,8 +9,6 @@ from conftest import CheckerTestCase, extract_node, make_message
 @pytest.fixture
 def enum_mod(proto_builder):
     return proto_builder("""
-        syntax = "proto2";
-
         enum Variable {
           CONTINUOUS = 0;
           DISCRETE = 1;
@@ -21,8 +19,6 @@ def enum_mod(proto_builder):
 @pytest.fixture
 def nested_enum_mod(proto_builder):
     return proto_builder("""
-        syntax = "proto2";
-
         enum Outer {
           UNDEFINED = 0;
           ONE = 1;
@@ -36,14 +32,12 @@ def nested_enum_mod(proto_builder):
             DOS = 2;
           }
         }
-    """, 'nested_enum')
+    """)
 
 
 @pytest.fixture
 def package_nested_enum_mod(proto_builder):
     return proto_builder("""
-        syntax = "proto2";
-
         enum Outer {
           UNDEFINED = 0;
           ONE = 1;
@@ -60,7 +54,6 @@ def package_nested_enum_mod(proto_builder):
     """, 'package.nested_enum')
 
 
-@pytest.mark.skip(reason='unimplemented in new transform')
 class TestEnumDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
@@ -89,7 +82,7 @@ class TestEnumDefinitions(CheckerTestCase):
                 Variable.should_warn  #@
             )
         """.format(enum_mod))
-        msg = make_message(node, enum_mod+'.Variable', 'should_warn')
+        msg = make_message(node, 'Variable', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_import_enum_by_value_no_errors(self, enum_mod):
@@ -109,7 +102,7 @@ class TestEnumDefinitions(CheckerTestCase):
             from {} import *
             Variable.should_warn  #@
         """.format(enum_mod))
-        msg = make_message(node, enum_mod+'.Variable', 'should_warn')
+        msg = make_message(node, 'Variable', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     @pytest.mark.xfail(reason='unimplemented')
@@ -120,7 +113,7 @@ class TestEnumDefinitions(CheckerTestCase):
             Variable.Value('should_warn')  #@
         )
         """.format(enum_mod))
-        msg = make_message(node, enum_mod+'.Variable', 'should_warn')
+        msg = make_message(node, 'Variable', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue16_toplevel_enum(self, nested_enum_mod):
@@ -152,7 +145,7 @@ class TestEnumDefinitions(CheckerTestCase):
             import {mod}
             {mod}.Message.should_warn
         """.format(mod=package_nested_enum_mod))
-        msg = make_message(node, package_nested_enum_mod+'.Message', 'should_warn')
+        msg = make_message(node, 'Message', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue16_nested_enum_definition_warns(self, nested_enum_mod):
@@ -160,7 +153,7 @@ class TestEnumDefinitions(CheckerTestCase):
             import {} as sut
             sut.Message.should_warn
         """.format(nested_enum_mod))
-        msg = make_message(node, nested_enum_mod+'.Message', 'should_warn')
+        msg = make_message(node, 'Message', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue16_missing_toplevel_enum(self, nested_enum_mod):
@@ -188,13 +181,12 @@ class TestEnumDefinitions(CheckerTestCase):
                 pass
         """.format(nested_enum_mod)))
 
-    @pytest.mark.xfail(reason='issue #21 unfixed')
     def test_issue21_missing_field_on_nested_enum(self, nested_enum_mod):
         node = extract_node("""
             import {} as sut
             sut.Message.Inner.NOPE = 123
         """.format(nested_enum_mod))
-        msg = make_message(node.targets[0], nested_enum_mod+'.Message.Inner', 'NOPE')
+        msg = make_message(node.targets[0], 'Inner', 'NOPE')
         self.assert_adds_messages(node, msg)
 
     def test_nested_enum_dict(self):
