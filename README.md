@@ -38,3 +38,5 @@ fields from Protobuf types.
 `pylint-protobuf` does not currently support the following concepts from the protobuf specification:
  * `oneof` fields
  * repeated fields
+
+Externally defined message types are currently uninferable and so checking fields on message types may fail.

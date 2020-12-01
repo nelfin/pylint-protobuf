@@ -5,10 +5,10 @@ import pylint.testutils
 import pylint_protobuf
 
 
-@pytest.mark.skip('nested element access not yet re-implemented')
 class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
+    @pytest.mark.xfail(reason='externally defined types are Uninferable')
     def test_complex_field(self):
         node = astroid.extract_node("""
         from fixture.complexfield_pb2 import Outer
@@ -18,7 +18,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0],
-            args=('should_warn', 'fixture.complexfield_pb2.Outer.inner')
+            args=('should_warn', 'Inner')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
@@ -59,7 +59,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0],
-            args=('should_warn', 'fixture.innerclass_pb2.Person.primary_alias')
+            args=('should_warn', 'Alias')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
@@ -79,6 +79,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    @pytest.mark.xfail(reason='externally defined types are Uninferable')
     def test_external_nested_class_warns(self):
         node = astroid.extract_node("""
         from fixture.extern_pb2 import UserFavourite
@@ -88,7 +89,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0],
-            args=('should_warn', 'fixture.extern_pb2.UserFavourite.favourite')
+            args=('should_warn', 'favourite')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
