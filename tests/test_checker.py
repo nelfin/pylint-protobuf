@@ -459,27 +459,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.skip(reason='import "proto" broken')
-    def test_issue9_imported_message_no_attribute_error(self):
-        node = astroid.extract_node("""
-        from fixture.import_pb2 import Parent
-        """)
-        self.walk(node.root())
-
-    @pytest.mark.xfail(reason='unimplemented')
-    def test_issue10_imported_message_warns(self):
-        node = astroid.extract_node("""
-        from fixture.import_pb2 import Parent
-        p = Parent()
-        p.child.should_warn = 123  #@
-        """)
-        message = pylint.testutils.Message(
-            'protobuf-undefined-attribute',
-            node=node, args=('should_warn', 'fixture.import_pb2.Parent.child')
-        )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
-
     def test_issue13_importing_a_module_from_package(self):
         node = astroid.extract_node("""
         from fixture import innerclass_pb2
@@ -521,21 +500,6 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
-        )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
-
-    @pytest.mark.skip(reason='import "proto" broken')
-    def test_issue18_renamed_from_import_no_assertion_error(self):
-        node = astroid.extract_node("""
-        from fixture import import_pb2
-        from fixture import import_pb2 as foo
-        p = import_pb2.Parent()
-        p.should_warn = 123
-        """)
-        message = pylint.testutils.Message(
-            'protobuf-undefined-attribute',
-            node=node.targets[0], args=('should_warn', 'Parent')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
