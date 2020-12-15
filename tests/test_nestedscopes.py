@@ -12,17 +12,46 @@ def fake_pb2(proto_builder):
         }
     """)
 
+@pytest.fixture
+def first_alias(proto_builder):
+    return proto_builder("""
+        message Person {
+            required string name = 1;
+        }
+    """)
+
+@pytest.fixture
+def second_alias(proto_builder):
+    return proto_builder("""
+        message Person {
+            required string preferred_name = 1;
+        }
+    """)
+
 class TestNestedScopes(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.xfail(reason='inference error?')
-    def test_many_imports_no_aliasing(self):
+    def test_many_imports_no_aliasing(self, first_alias, second_alias):
         node = astroid.extract_node("""
-        import fixture.innerclass_pb2
-        import fixture.import_pb2
-        p = innerclass_pb2.Person()
+        import {first}
+        import {second}
+        p = {first}.Person()
         p.should_warn = 123
-        """)
+        """.format(first=first_alias, second=second_alias))
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('should_warn', 'Person')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_many_imports_with_aliasing(self, first_alias, second_alias):
+        node = astroid.extract_node("""
+        from {first} import Person
+        from {second} import Person
+        p = Person()
+        p.should_warn = 123
+        """.format(first=first_alias, second=second_alias))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
