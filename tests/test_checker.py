@@ -517,3 +517,17 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unimplemented')
+    def test_typeerror_on_attrassign(self):
+        node = astroid.extract_node("""
+        import person_pb2 as person_pb2
+        p = person_pb2.Person()
+        p.name = 123
+        """)
+        message = pylint.testutils.Message(
+            'protobuf-type-error',  # TODO
+            node=node.targets[0], args=('name', 'Person')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
