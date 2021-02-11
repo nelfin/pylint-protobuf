@@ -34,6 +34,7 @@ setup(
     install_requires=[
         'astroid',
         'pylint',
+        'protobuf',
     ],
     zip_safe=False
 )
