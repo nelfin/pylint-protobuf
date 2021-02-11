@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## [0.14.1] - 2021-02-11
+- Warning and suppression of ImportError for Python 3.9 and protobuf 3.14
+
 ## [0.14] - 2021-02-11
 - Rewrite of the internals of the checker to compare usages against protobuf
   message and field descriptors. This change represents a significant departure
