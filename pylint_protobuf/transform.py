@@ -96,7 +96,7 @@ def _template_message(desc, depth=0):
     slots = _names(desc)
     inner_fields, external_fields = partition_message_fields(desc)
     # NOTE: the "pass" statement is a hack to provide a body when struct_fields is empty
-    init_str = 'def __init__(self):\n    pass\n' + ''.join(
+    init_str = 'def __init__(self, *args, **kwargs):\n    pass\n' + ''.join(
         '    self.{} = self.{}()\n'.format(field_name, field_type)
         for field_name, field_type in inner_fields
     ) + ''.join(
