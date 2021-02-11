@@ -4,11 +4,26 @@ import textwrap
 
 import astroid
 
-from google.protobuf.pyext._message import (
-    Descriptor,
-    EnumDescriptor,
-    FieldDescriptor,
-)
+try:
+    from google.protobuf.pyext._message import (
+        Descriptor,
+        EnumDescriptor,
+        FieldDescriptor,
+    )
+except ImportError:
+    import sys
+    import warnings
+    if sys.version_info >= (3, 9):
+        warnings.warn(
+            "google.protobuf (earlier than 3.15.x) does not support Python 3.9"
+            " (see https://github.com/protocolbuffers/protobuf/issues/7978)"
+        )
+    class Descriptor:
+        pass
+    class EnumDescriptor:
+        pass
+    class FieldDescriptor:
+        pass
 
 
 def _template_enum(desc, depth=0):
