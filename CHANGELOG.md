@@ -1,5 +1,19 @@
 # pylint-protobuf
 
+## [0.14] - 2021-02-11
+- Rewrite of the internals of the checker to compare usages against protobuf
+  message and field descriptors. This change represents a significant departure
+  in the design of the checker towards an AST transform of pb2 modules into
+  plain class definitions and leveraging the astroid inference framework to
+  track scope changes and name shadowing. This release should have feature
+  parity with 0.13 (some message details have changed, though message codes
+  remain the same), please raise an issue if behaviours have changed in
+  unexpected ways.
+- This release should address a number of outstanding issues around nested
+  message and enum definitions (#16, #21, #24), renaming/aliasing (#23),
+  and dynamic typing (#26). Thanks @diana-infinitus-ai, @fivepapertigers,
+  @mishas, @NickeZ, @sagar-infinitus-ai, and @xSAVIKx for the reports.
+
 ## [0.13] - 2020-06-18
 - Fix false positive warnings on nested enum definitions. Thanks
   @diana-infinitus-ai for the PR (#28)
