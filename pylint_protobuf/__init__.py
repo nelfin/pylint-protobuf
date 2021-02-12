@@ -108,18 +108,22 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _assignattr(self, node):
         # type: (Union[astroid.Attribute, astroid.AssignAttr]) -> None
         try:
-            val = node.expr.inferred()[0]  # FIXME: may be empty
+            vals = node.expr.inferred()
         except astroid.InferenceError:
             return  # TODO: warn or redo
-        if hasattr(val, '_proxied'):
-            cls_def = val._proxied  # type: astroid.ClassDef
-        elif isinstance(val, astroid.Module):
-            return self._check_module(val, node)  # FIXME: move
-        elif isinstance(val, astroid.ClassDef):
-            cls_def = val
+        # Look for any version of the inferred type to be a Protobuf class
+        for val in vals:
+            cls_def = None
+            if hasattr(val, '_proxied'):
+                cls_def = val._proxied  # type: astroid.ClassDef
+            elif isinstance(val, astroid.Module):
+                return self._check_module(val, node)  # FIXME: move
+            elif isinstance(val, astroid.ClassDef):
+                cls_def = val
+            if cls_def and getattr(cls_def, '_is_protobuf_class', False):
+                break
         else:
-            return
-        if not getattr(cls_def, '_is_protobuf_class', False):
+            # couldn't find cls_def
             return
         self._disable('no-member', node.lineno)  # Should always be checked by us instead
         if node.attrname not in cls_def._protobuf_fields:
