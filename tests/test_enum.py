@@ -51,7 +51,7 @@ def package_nested_enum_mod(proto_builder):
             DOS = 2;
           }
         }
-    """, 'package.nested_enum')
+    """, 'nested_enum', package='package')
 
 
 class TestEnumDefinitions(CheckerTestCase):

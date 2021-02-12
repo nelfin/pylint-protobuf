@@ -20,72 +20,39 @@ def error_on_missing_modules():
     pylint_protobuf._MISSING_IMPORT_IS_ERROR = oldval
 
 
-def _touch(fname):
-    with open(fname, 'wb'):
-        pass
-
-
-def _split_package_path(pkg_spec):
-    """
-    >>> _split_package_path('module')
-    ('.', 'module')
-    >>> _split_package_path('package.module')
-    ('package', 'module')
-    >>> _split_package_path('parent.package.module')
-    ('parent/package', 'module')
-    """
-    parts = pkg_spec.split('.')
-    if len(parts) == 1:
-        return '.', parts[0]
-    return os.path.join(*parts[:-1]), parts[-1]
-
-
-def _parts(path):
-    """
-    >>> list(_parts('parent/child/'))
-    ['parent', 'child']
-    >>> list(_parts('parent/child'))
-    ['parent']
-    """
-    parts = []
-    head, _ = os.path.split(path)
-    while head:
-        head, tail = os.path.split(head)
-        parts.append(tail)
-    return reversed(parts)
-
-
-def _prepare_package_path(path):
-    if path == '.':
-        return
-    os.makedirs(path, exist_ok=True)
-    for dirname in _parts(path):
-        os.chdir(dirname)
-        _touch('__init__.py')
-
-
 @pytest.fixture
 def proto_builder(tmpdir, monkeypatch, request):
-    def proto(source, name=None, preamble=None):
+    def proto(source, name=None, preamble=None, package=None):
         if name is None:
             name = request.node.name
         if preamble is None:
             preamble = 'syntax = "proto2";\npackage {};\n'.format(name)
-        path, module_name = _split_package_path(name)
-        proto_name = '{}.proto'.format(module_name)
+        if package is None:
+            package = ''
+        assert '.' not in name, "FIXME: use package arg"
+        path = package.split('.')
 
         old = tmpdir.chdir()
-        _prepare_package_path(path)
-        p = tmpdir.join(proto_name)
+
+        d = tmpdir.join(*path)
+        os.makedirs(d, exist_ok=True)  # exist_ok to catch the package='' case
+
+        proto_name = '{}.proto'.format(name)
+        p = d.join(proto_name)
         p.write(preamble + textwrap.dedent(source))
 
         try:
-            check_call(['protoc', '--python_out={}'.format(path), proto_name])
+            p.dirpath().chdir()
+            check_call(['protoc', '--python_out=.', proto_name])
         finally:
             old.chdir()
 
         monkeypatch.syspath_prepend(tmpdir)
-        return '{}_pb2'.format(name)
+
+        pb2_name = '{}_pb2'.format(name)
+        if package:
+            pb2_name = '{}.{}'.format(package, pb2_name)
+        return pb2_name
     yield proto
     tmpdir.remove()
 
