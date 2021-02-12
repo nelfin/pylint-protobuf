@@ -95,8 +95,10 @@ def _template_message(desc, depth=0):
     inner_fragments = inner_types(desc, depth)
     slots = _names(desc)
     inner_fields, external_fields = partition_message_fields(desc)
+    args = list(slots) + [name for name, _ in inner_fields] + [name for name, _ in external_fields]
+    args = ['self'] + ['{}=None'.format(arg) for arg in args]
     # NOTE: the "pass" statement is a hack to provide a body when struct_fields is empty
-    init_str = 'def __init__(self, *args, **kwargs):\n    pass\n' + ''.join(
+    init_str = 'def __init__({}):\n    pass\n'.format(', '.join(args)) + ''.join(
         '    self.{} = self.{}()\n'.format(field_name, field_type)
         for field_name, field_type in inner_fields
     ) + ''.join(

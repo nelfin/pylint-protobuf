@@ -39,7 +39,6 @@ def warnings_mod(kwarg_mod, module_builder):
     """.format(kwarg_mod), 'warnings_mod')
 
 
-@pytest.mark.xfail(reason='actual keyword arguments are not yet checked')
 def test_E1123_on_unexpected_kwargs(warnings_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
@@ -47,7 +46,7 @@ def test_E1123_on_unexpected_kwargs(warnings_mod, linter_factory):
     )
     linter.check([warnings_mod])
     expected_messages = [
-        pylint.checkers.typecheck.MSGS['E1123'][0] % ('Count', 'y')
+        pylint.checkers.typecheck.MSGS['E1123'][0] % ('y', 'constructor')
     ]
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert sorted(actual_messages) == sorted(expected_messages)
