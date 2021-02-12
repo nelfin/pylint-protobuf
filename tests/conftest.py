@@ -35,7 +35,9 @@ def proto_builder(tmpdir, monkeypatch, request):
         old = tmpdir.chdir()
 
         d = tmpdir.join(*path)
-        os.makedirs(d, exist_ok=True)  # exist_ok to catch the package='' case
+        # str(d) for Python 3.5 compatibility
+        # exist_ok to catch the package='' case
+        os.makedirs(str(d), exist_ok=True)
 
         proto_name = '{}.proto'.format(name)
         p = d.join(proto_name)
