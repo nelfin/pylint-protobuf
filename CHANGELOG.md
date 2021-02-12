@@ -1,5 +1,15 @@
 # pylint-protobuf
 
+## [0.16.0] - Unreleased
+- Allow warnings on unknown keyword arguments in protobuf message constructors
+  (originally suppressed to fix #30)
+- Fix incorrect AST transform of deeply-nested message types (#33, #34)
+- Add better support for map fields (#35)
+- Change handling of inferred values around ambiguous cases where a name may be
+  a protobuf message (#36)
+
+Thanks to @mabrowning for the reports and PRs! (#33, #34, #35, #36)
+
 ## [0.15.0] - 2021-02-12
 - Fix spurious warnings on use of keyword arguments in protobuf message
   constructors due to integration with pylint typecheck (#30)
