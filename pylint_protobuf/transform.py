@@ -103,10 +103,12 @@ def _template_message(desc, depth=0):
         '    self.{} = {}()\n'.format(field_name, field_type)
         for field_name, field_type in external_fields
     )
-    cls_str = 'class {name}(object):\n    __slots__ = {slots}\n{body}{init}'.format(
+    helpers = 'def __getitem__(self, idx):\n    pass\n'
+    cls_str = 'class {name}(object):\n    __slots__ = {slots}\n{helpers}{body}{init}'.format(
         name=name,
         slots=slots,
         body=inner_fragments,
+        helpers=textwrap.indent(helpers, '    '),
         init=textwrap.indent(init_str, '    '),
     )
     return textwrap.indent(cls_str, '    '*depth)
