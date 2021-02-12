@@ -25,6 +25,13 @@ except ImportError:
     class FieldDescriptor:
         pass
 
+try:
+    from google.protobuf.internal.containers import ScalarMap, MessageMap
+except ImportError:
+    class MessageMap:
+        pass
+    class ScalarMap:
+        pass
 
 def _template_enum(desc):
     # type: (EnumDescriptor) -> str
@@ -102,7 +109,20 @@ def _template_message(desc):
         '    self.{} = {}()\n'.format(field_name, field_type)
         for field_name, field_type in external_fields
     )
-    helpers = 'def __getitem__(self, idx):\n    pass\n'
+    helpers = ""
+    if desc.has_options and desc.GetOptions().map_entry:
+        # for map <key, value> fields
+        # This mirrors the _IsMessageMapField check
+        value_type = desc.fields_by_name['value']
+        if value_type.cpp_type == FieldDescriptor.CPPTYPE_MESSAGE:
+            base_class = MessageMap
+        else:
+            base_class = ScalarMap
+        # Rather than (key, value), use the attributes of the correct
+        # MutableMapping type as the "slots"
+        slots = tuple(m for m in dir(base_class) if not m.startswith("_"))
+        helpers = 'def __getitem__(self, idx):\n    pass\n'
+        helpers += 'def __delitem__(self, idx):\n    pass\n'
     cls_str = 'class {name}(object):\n    __slots__ = {slots}\n{helpers}{body}{init}'.format(
         name=name,
         slots=slots,
