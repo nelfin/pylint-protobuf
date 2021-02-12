@@ -1,5 +1,12 @@
 # pylint-protobuf
 
+## [0.15.0] - 2021-02-12
+- Fix spurious warnings on use of keyword arguments in protobuf message
+  constructors due to integration with pylint typecheck (#30)
+- Fix some false-positives on protobuf enum types (#31)
+- Fix spurious warnings on protobuf map fields due to integration with pylint
+  typecheck (#32). Thanks to @mabrowning for these reports (#30, #31, #32).
+
 ## [0.14.1] - 2021-02-11
 - Warning and suppression of ImportError for Python 3.9 and protobuf 3.14
 
