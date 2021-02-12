@@ -197,3 +197,9 @@ class TestEnumDefinitions(CheckerTestCase):
         """)
         with self.assertNoMessages():
             self.walk(outer.root())
+
+    def test_issue31_name_from_value_no_warnings(self, enum_mod):
+        self.assert_no_messages(extract_node("""
+        from {} import Variable
+        print(Variable.Name(0))
+        """.format(enum_mod)))

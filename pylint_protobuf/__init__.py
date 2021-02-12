@@ -44,8 +44,12 @@ PROTOBUF_IMPLICIT_ATTRS = [
     'WhichOneof',
 ]
 PROTOBUF_ENUM_IMPLICIT_ATTRS = [
+    'Name',
     'Value',
-]
+    'keys',
+    'values',
+    'items',
+]  # See google.protobuf.internal.enum_type_wrapper
 WELLKNOWNTYPE_MODULES = [
     'any_pb2',
     'descriptor_pb2',
