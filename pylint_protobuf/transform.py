@@ -26,18 +26,17 @@ except ImportError:
         pass
 
 
-def _template_enum(desc, depth=0):
-    # type: (EnumDescriptor, int) -> str
+def _template_enum(desc):
+    # type: (EnumDescriptor) -> str
     body = ''.join(
         '{} = {}\n'.format(name, value.number)
         for name, value in desc.values_by_name.items()
     )
-    enum_str = 'class {name}(object):\n    __slots__ = {slots}\n{body}'.format(
+    return 'class {name}(object):\n    __slots__ = {slots}\n{body}'.format(
         name=desc.name,
         slots=repr(tuple(desc.values_by_name)),
         body=textwrap.indent(body, '    '),
     )
-    return textwrap.indent(enum_str, '    '*depth)
 
 def transform_enum(desc):
     # type: (EnumDescriptor) -> List[Tuple[str, Union[astroid.ClassDef, astroid.Assign]]]
@@ -51,15 +50,14 @@ def transform_enum(desc):
         names.append((name, astroid.extract_node('{} = {}'.format(name, number))))
     return [(cls_def.name, cls_def)] + names
 
-def inner_types(desc, depth=0):
-    # type: (Descriptor, int) -> str
+def inner_types(desc):
+    # type: (Descriptor) -> str
     fragments = []
     for enum_desc in desc.enum_types:
-        fragments.append(_template_enum(enum_desc, depth=depth+1))
+        fragments.append(_template_enum(enum_desc))
     for inner_desc in desc.nested_types:
-        fragments.append(_template_message(inner_desc, depth=depth+1))
-    return '\n'.join(fragments)
-
+        fragments.append(_template_message(inner_desc))
+    return textwrap.indent('\n'.join(fragments), '    ')
 
 def mark_as_protobuf(cls_def):
     # type: (astroid.ClassDef) -> None
@@ -88,11 +86,10 @@ def partition_message_fields(desc):
     ]
     return inner_fields, external_fields
 
-def _template_message(desc, depth=0):
-    # type: (Descriptor, int) -> str
-    assert depth < 10, "too many levels of indirection, check!"
+def _template_message(desc):
+    # type: (Descriptor) -> str
     name = desc.name
-    inner_fragments = inner_types(desc, depth)
+    inner_fragments = inner_types(desc)
     slots = _names(desc)
     inner_fields, external_fields = partition_message_fields(desc)
     args = list(slots) + [name for name, _ in inner_fields] + [name for name, _ in external_fields]
@@ -113,7 +110,7 @@ def _template_message(desc, depth=0):
         helpers=textwrap.indent(helpers, '    '),
         init=textwrap.indent(init_str, '    '),
     )
-    return textwrap.indent(cls_str, '    '*depth)
+    return cls_str
 
 def transform_message(desc):
     # type: (Any) -> List[Tuple[str, astroid.ClassDef]]
