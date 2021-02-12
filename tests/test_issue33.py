@@ -38,7 +38,7 @@ def test_no_E1101_on_superinner_types(no_warnings_mod, linter_factory):
     """
     linter = linter_factory(
         register=pylint_protobuf.register,
-        disable=['all'], enable=['no-member'],
+        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
     )
     linter.check([no_warnings_mod])
     actual_messages = [m.msg for m in linter.reporter.messages]
