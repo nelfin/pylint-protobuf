@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Set, Dict, Union, MutableMapping
 import textwrap
 
 import astroid
@@ -33,115 +33,182 @@ except ImportError:
     class ScalarMap:
         pass
 
-def _template_enum(desc):
-    # type: (EnumDescriptor) -> str
+
+class SimpleDescriptor(object):
+    def __init__(self, desc):
+        # type: (Union[EnumDescriptor, Descriptor]) -> None
+        if isinstance(desc, EnumDescriptor):  # do something about this variance
+            self._is_protobuf_enum = True
+            self._enum_desc = desc
+        else:
+            self._is_protobuf_enum = False
+            self._desc = desc
+        self._cls_hash = str(id(self))  # err...
+
+    @property
+    def identifier(self):
+        # type: () -> str
+        return self._cls_hash
+
+    @property
+    def name(self):
+        # type: () -> str
+        if self._is_protobuf_enum:
+            return self._enum_desc.name
+        else:
+            return self._desc.name
+
+    @property
+    def options(self):
+        if self._desc.has_options:
+            return self._desc.GetOptions()
+        else:
+            class FalseyAttributes(object):
+                def __getattr__(self, item):
+                    return None
+            return FalseyAttributes()
+
+    @property
+    def field_names(self):
+        # type: () -> Set[str]
+        if self._is_protobuf_enum:
+            return set(self._enum_desc.values_by_name)
+        else:
+            desc = self._desc  # type: Descriptor
+            return set(desc.fields_by_name) | \
+                   set(desc.enum_values_by_name) | \
+                   set(desc.enum_types_by_name) | \
+                   set(desc.nested_types_by_name)
+
+    @property
+    def fields_by_name(self):
+        # type: () -> Dict[str, FieldDescriptor]
+        return self._desc.fields_by_name
+
+    @property
+    def values_by_name(self):
+        # type: () -> List[Tuple[str, int]]
+        assert self._is_protobuf_enum, "Only makes sense for enum descriptors"
+        return [(n, v.number) for n, v in self._enum_desc.values_by_name.items()]
+
+    @property
+    def message_fields(self):
+        # type: () -> List[FieldDescriptor]
+        assert not self._is_protobuf_enum, "Only makes sense for message descriptors"
+        return [f for f in self._desc.fields if f.type == FieldDescriptor.TYPE_MESSAGE]
+
+    @property
+    def enum_types(self):
+        return self._desc.enum_types
+
+    @property
+    def nested_types(self):
+        return self._desc.nested_types
+
+    @property
+    def inner_fields(self):
+        # type: () -> List[Tuple[str, str]]
+        return [
+            (f.name, f.message_type.name) for f in self.message_fields
+            if f.message_type.containing_type is self._desc
+        ]
+
+    @property
+    def external_fields(self):
+        # type: () -> List[Tuple[str, str]]
+        return [
+            (f.name, f.message_type.name) for f in self.message_fields
+            if f.message_type.containing_type is not self._desc
+        ]
+
+    @property
+    def repeated_fields(self):
+        # type: () -> Set[str]
+        return set(
+            f.name for f in self._desc.fields
+            if f.label == FieldDescriptor.LABEL_REPEATED
+            and (f.type != FieldDescriptor.TYPE_MESSAGE)
+        )
+
+DescriptorRegistry = MutableMapping[str, SimpleDescriptor]
+
+
+def _template_enum(desc, descriptor_registry):
+    # type: (EnumDescriptor, DescriptorRegistry) -> str
+    desc = SimpleDescriptor(desc)
+    descriptor_registry[desc.identifier] = desc
+
     body = ''.join(
-        '{} = {}\n'.format(name, value.number)
-        for name, value in desc.values_by_name.items()
+        '{} = {}\n'.format(name, value) for name, value in desc.values_by_name
     )
-    return 'class {name}(object):\n    __slots__ = {slots}\n{body}'.format(
+    return (
+        'class {name}(object):\n'
+        '    {docstring!r}\n'
+        '    __slots__ = {slots}\n'
+        '{body}\n'
+    ).format(
         name=desc.name,
-        slots=repr(tuple(desc.values_by_name)),
+        docstring="descriptor={}".format(desc.identifier),
+        slots=repr(tuple(desc.field_names)),
         body=textwrap.indent(body, '    '),
     )
 
-def transform_enum(desc):
-    # type: (EnumDescriptor) -> List[Tuple[str, Union[astroid.ClassDef, astroid.Assign]]]
-    cls_def = astroid.extract_node(_template_enum(desc))  # type: astroid.ClassDef
+
+def transform_enum(desc, descriptor_registry):
+    # type: (EnumDescriptor, DescriptorRegistry) -> List[Tuple[str, Union[astroid.ClassDef, astroid.Assign]]]
+
+    # NOTE: Only called on top-level enum definitions, so we don't need to
+    # recurse like with transform_message
+    cls_def = astroid.extract_node(_template_enum(desc, descriptor_registry))  # type: astroid.ClassDef
+
     cls_def._is_protobuf_class = True
-    cls_def._is_protobuf_enum = True
-    cls_def._protobuf_fields = set(desc.values_by_name)
+    # TODO: check what I'm doing with _is_protobuf_enum (since it doesn't get set on nested enums)
+    # TODO: Do test of nested enum behaviour differing to top-level enum
+    cls_def._is_protobuf_enum = True  # should be on the descriptor
+    simple_desc = descriptor_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
+    cls_def._protobuf_fields = simple_desc.field_names
+    cls_def._protobuf_descriptor = simple_desc
+
     names = []  # type: List[Tuple[str, astroid.Assign]]
     for type_wrapper in desc.values:
         name, number = type_wrapper.name, type_wrapper.number
         names.append((name, astroid.extract_node('{} = {}'.format(name, number))))
     return [(cls_def.name, cls_def)] + names
 
-def inner_types(desc):
-    # type: (Descriptor) -> str
-    fragments = []
-    for enum_desc in desc.enum_types:
-        fragments.append(_template_enum(enum_desc))
-    for inner_desc in desc.nested_types:
-        fragments.append(_template_message(inner_desc))
-    return textwrap.indent('\n'.join(fragments), '    ')
 
-def mark_as_protobuf(cls_def):
-    # type: (astroid.ClassDef) -> None
-    cls_def._is_protobuf_class = True
-    cls_def._protobuf_fields = set(s.value for s in cls_def.slots())  # FIXME: descriptors?, duplication?
-    for name, val in cls_def.locals.items():
-        val = val[0]  # assert len(val) == 1?
-        if isinstance(val, astroid.ClassDef):
-            mark_as_protobuf(val)
-
-def _names(desc):
-    # type: (Descriptor) -> Tuple[str]
-    return tuple(desc.fields_by_name) + tuple(desc.enum_values_by_name) + tuple(desc.enum_types_by_name) + tuple(desc.nested_types_by_name)
-
-
-def partition_message_fields(desc):
-    # type: (Descriptor) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]
-    message_fields = [f for f in desc.fields if f.type == FieldDescriptor.TYPE_MESSAGE]  # type: List[FieldDescriptor]
-    inner_fields = [
-        (f.name, f.message_type.name) for f in message_fields
-        if f.message_type.containing_type is desc
-    ]
-    external_fields = [
-        (f.name, f.message_type.name) for f in message_fields
-        if f.message_type.containing_type is not desc
-    ]
-    return inner_fields, external_fields
-
-
-def get_repeated_scalar_fields(desc):
-    # type: (Descriptor) -> List[str]
-    # TODO: check scalar types?
-    repeated_fields = [
-        f.name for f in desc.fields
-        if f.label == FieldDescriptor.LABEL_REPEATED
-        and (f.type != FieldDescriptor.TYPE_MESSAGE)
-    ]
-    return repeated_fields
-
-
-def _template_message(desc):
-    # type: (Descriptor) -> str
+def _template_message(desc, descriptor_registry):
+    # type: (Descriptor, DescriptorRegistry) -> str
     """
     Returns cls_def string, list of fields, list of repeated fields
     """
-    name = desc.name
-    inner_fragments = inner_types(desc)
-    slots = _names(desc)
-    inner_fields, external_fields = partition_message_fields(desc)
+    desc = SimpleDescriptor(desc)
+    descriptor_registry[desc.identifier] = desc
 
-    fields = list(slots) + [name for name, _ in inner_fields] + [name for name, _ in external_fields]
-    args = ['self'] + ['{}=None'.format(f) for f in fields]
-
-    repeated_fields = get_repeated_scalar_fields(desc)
+    slots = desc.field_names
 
     # NOTE: the "pass" statement is a hack to provide a body when args is empty
     initialisers = ['pass']
     initialisers += [
         'self.{} = self.{}()'.format(field_name, field_type)
-        for field_name, field_type in inner_fields
+        for field_name, field_type in (desc.inner_fields)
     ]
     initialisers += [
         'self.{} = {}()'.format(field_name, field_type)
-        for field_name, field_type in external_fields
+        for field_name, field_type in (desc.external_fields)
     ]
     initialisers += [
         'self.{} = []'.format(field_name)
-        for field_name in repeated_fields
+        for field_name in desc.repeated_fields
     ]
 
+    args = ['self'] + ['{}=None'.format(f) for f in slots]
     init_str = 'def __init__({argspec}):\n{initialisers}\n'.format(
         argspec=', '.join(args),
         initialisers=textwrap.indent('\n'.join(initialisers), '   '),
     )
 
     helpers = ""
-    if desc.has_options and desc.GetOptions().map_entry:
+    if desc.options.map_entry:
         # for map <key, value> fields
         # This mirrors the _IsMessageMapField check
         value_type = desc.fields_by_name['value']
@@ -155,29 +222,60 @@ def _template_message(desc):
         helpers = 'def __getitem__(self, idx):\n    pass\n'
         helpers += 'def __delitem__(self, idx):\n    pass\n'
 
-    cls_str = 'class {name}(object):\n    __slots__ = {slots}\n{helpers}{body}{init}'.format(
-        name=name,
+    body = ''.join([
+        _template_enum(d, descriptor_registry) for d in desc.enum_types
+    ] + [
+        _template_message(d, descriptor_registry) for d in desc.nested_types
+    ])
+
+    cls_str = (
+        'class {name}(object):\n'
+        '    {docstring!r}\n'
+        '    __slots__ = {slots}\n'
+        '{helpers}{body}{init}\n'
+    ).format(
+        name=desc.name,
+        docstring="descriptor={}".format(desc.identifier),
         slots=slots,
-        body=inner_fragments,
+        body=textwrap.indent(body, '    '),
         helpers=textwrap.indent(helpers, '    '),
         init=textwrap.indent(init_str, '    '),
     )
+
     return cls_str
 
-def transform_message(desc):
-    # type: (Any) -> List[Tuple[str, astroid.ClassDef]]
-    cls_str = _template_message(desc)
+
+def transform_message(desc, desc_registry):
+    # type: (Any, DescriptorRegistry) -> List[Tuple[str, astroid.ClassDef]]
+    cls_str = _template_message(desc, desc_registry)
+
+    def visit_classdef(cls_def):
+        # type: (astroid.ClassDef) -> astroid.ClassDef
+        cls_def._is_protobuf_class = True
+        simple_desc = desc_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
+        cls_def._protobuf_fields = simple_desc.field_names
+        cls_def._protobuf_descriptor = simple_desc
+        return cls_def
+
+    # Now we can do stuff bottom-up instead of top-down...
+    astroid.MANAGER.register_transform(astroid.ClassDef, visit_classdef)
     cls = astroid.extract_node(cls_str)  # type: astroid.ClassDef
-    mark_as_protobuf(cls)
+    astroid.MANAGER.unregister_transform(astroid.ClassDef, visit_classdef)
+
     return [(cls.name, cls)]
+
 
 def transform_descriptor_to_class(cls):
     # type: (Any) -> List[Tuple[str, Union[astroid.ClassDef, astroid.Name]]]
-    desc = cls.DESCRIPTOR
+    try:
+        desc = cls.DESCRIPTOR
+    except AttributeError:
+        raise NotImplementedError()
+    desc_registry = {}  # type: DescriptorRegistry
     if isinstance(desc, EnumDescriptor):
-        return transform_enum(desc)
+        return transform_enum(desc, desc_registry)
     elif isinstance(desc, Descriptor):
-        return transform_message(desc)
+        return transform_message(desc, desc_registry)
     else:
         raise NotImplementedError()
 
@@ -196,29 +294,15 @@ def mod_node_to_class(mod, name):
     return ns[name]
 
 
-def transform_import(node):
-    # have to transform imports into class definitions
-    # or is there a way to modify the inferred value of the names when doing a function call?
-
-    # turn an import into a series of class definitions assigned to some object, or inner class definitions?
-    # a la:
-    # class person_pb2:
-    #     class Person:
-    #          __slots__ = ('name', )
-    raise NotImplementedError()
-
-
 def transform_module(mod):
     # type: (astroid.Module) -> astroid.Module
-
     for name in mod.wildcard_import_names():
         cls = mod_node_to_class(mod, name)
         try:
             for local_name, node in transform_descriptor_to_class(cls):
                 mod.locals[local_name] = [node]
-        except (NotImplementedError, AttributeError):
+        except NotImplementedError:
             pass
-
     return mod
 
 
