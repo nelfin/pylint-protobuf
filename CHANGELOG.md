@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.16.0] - Unreleased
+## [0.16.0] - 2021-02-13
 - Allow warnings on unknown keyword arguments in protobuf message constructors
   (originally suppressed to fix #30)
 - Fix incorrect AST transform of deeply-nested message types (#33, #34)
