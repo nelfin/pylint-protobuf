@@ -8,7 +8,7 @@ import pylint_protobuf
 def repeated_scalar_mod(proto_builder):
     return proto_builder("""
         message Repeated {
-            required string values = 1;
+            repeated string values = 1;
         }
     """)
 
@@ -28,15 +28,15 @@ def repeated_composite_mod(proto_builder):
 class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.skip(reason='not tested')
-    def test_missing_method(self, repeated_scalar_mod):
+    def test_no_warnings(self, repeated_scalar_mod):
         node = astroid.extract_node("""
             import {repeated}
 
             msg = {repeated}.Repeated()
-            msg.values.append("hello")
+            msg.values.append("hello")  # should not raise
         """.format(repeated=repeated_scalar_mod))
-        self.walk(node.root())
+        with self.assertNoMessages():
+            self.walk(node.root())
 
     @pytest.mark.xfail(reason='unimplemented')
     def test_repeated_attrassign(self, repeated_scalar_mod):
@@ -63,23 +63,48 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         """.format(repeated=repeated_scalar_mod))
         message = pylint.testutils.Message(
             'protobuf-type-error',  # TODO
-            node=node.targets[0], args=('values', 'Repeated')
+            node=node, args=('values', 'Repeated')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
     @pytest.mark.xfail(reason='unimplemented')
-    def test_missing_field_on_repeated_warns(self):
+    def test_missing_field_on_repeated_warns(self, repeated_composite_mod):
         node = astroid.extract_node("""
         import {repeated}
 
         outer = {repeated}.Outer()
         inner = outer.items.add()
         inner.invalid_field = 123  #@
-        """)
+        """.format(repeated=repeated_composite_mod))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Inner')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
+
+
+@pytest.fixture
+def scalar_warnings_mod(repeated_scalar_mod, module_builder):
+    return module_builder("""
+        import {repeated}
+
+        msg = {repeated}.Repeated()
+        msg.values.append("hello")          # should not raise
+        print(msg.values.should_raise)
+    """.format(repeated=repeated_scalar_mod), 'scalar_warnings_mod')
+
+
+def test_no_E1101_on_repeated_fields(scalar_warnings_mod, linter_factory):
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['no-member', 'protobuf-undefined-attribute'],
+    )
+    linter.check([scalar_warnings_mod])
+    expected_messages = [
+        "Instance of 'list' has no 'should_raise' member",
+    ]
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert actual_messages
+    assert sorted(actual_messages) == sorted(expected_messages)

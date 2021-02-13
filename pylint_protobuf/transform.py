@@ -93,22 +93,53 @@ def partition_message_fields(desc):
     ]
     return inner_fields, external_fields
 
+
+def get_repeated_scalar_fields(desc):
+    # type: (Descriptor) -> List[str]
+    # TODO: check scalar types?
+    repeated_fields = [
+        f.name for f in desc.fields
+        if f.label == FieldDescriptor.LABEL_REPEATED
+        and (f.type != FieldDescriptor.TYPE_MESSAGE)
+    ]
+    return repeated_fields
+
+
 def _template_message(desc):
     # type: (Descriptor) -> str
+    """
+    Returns cls_def string, list of fields, list of repeated fields
+    """
     name = desc.name
     inner_fragments = inner_types(desc)
     slots = _names(desc)
     inner_fields, external_fields = partition_message_fields(desc)
-    args = list(slots) + [name for name, _ in inner_fields] + [name for name, _ in external_fields]
-    args = ['self'] + ['{}=None'.format(arg) for arg in args]
-    # NOTE: the "pass" statement is a hack to provide a body when struct_fields is empty
-    init_str = 'def __init__({}):\n    pass\n'.format(', '.join(args)) + ''.join(
-        '    self.{} = self.{}()\n'.format(field_name, field_type)
+
+    fields = list(slots) + [name for name, _ in inner_fields] + [name for name, _ in external_fields]
+    args = ['self'] + ['{}=None'.format(f) for f in fields]
+
+    repeated_fields = get_repeated_scalar_fields(desc)
+
+    # NOTE: the "pass" statement is a hack to provide a body when args is empty
+    initialisers = ['pass']
+    initialisers += [
+        'self.{} = self.{}()'.format(field_name, field_type)
         for field_name, field_type in inner_fields
-    ) + ''.join(
-        '    self.{} = {}()\n'.format(field_name, field_type)
+    ]
+    initialisers += [
+        'self.{} = {}()'.format(field_name, field_type)
         for field_name, field_type in external_fields
+    ]
+    initialisers += [
+        'self.{} = []'.format(field_name)
+        for field_name in repeated_fields
+    ]
+
+    init_str = 'def __init__({argspec}):\n{initialisers}\n'.format(
+        argspec=', '.join(args),
+        initialisers=textwrap.indent('\n'.join(initialisers), '   '),
     )
+
     helpers = ""
     if desc.has_options and desc.GetOptions().map_entry:
         # for map <key, value> fields
@@ -123,6 +154,7 @@ def _template_message(desc):
         slots = tuple(m for m in dir(base_class) if not m.startswith("_"))
         helpers = 'def __getitem__(self, idx):\n    pass\n'
         helpers += 'def __delitem__(self, idx):\n    pass\n'
+
     cls_str = 'class {name}(object):\n    __slots__ = {slots}\n{helpers}{body}{init}'.format(
         name=name,
         slots=slots,
