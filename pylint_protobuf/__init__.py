@@ -4,6 +4,7 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
+from pylint_protobuf.transform import SimpleDescriptor
 
 _MISSING_IMPORT_IS_ERROR = False
 BASE_ID = 59
@@ -121,12 +122,13 @@ class ProtobufDescriptorChecker(BaseChecker):
             elif isinstance(val, astroid.ClassDef):
                 cls_def = val
             if cls_def and getattr(cls_def, '_is_protobuf_class', False):
-                break
+                break  # getattr guards against Uninferable (always returns self)
         else:
             # couldn't find cls_def
             return
+        desc = cls_def._protobuf_descriptor  # type: SimpleDescriptor
         self._disable('no-member', node.lineno)  # Should always be checked by us instead
-        if node.attrname not in cls_def._protobuf_fields:
+        if node.attrname not in desc.field_names:
             if node.attrname in PROTOBUF_IMPLICIT_ATTRS + PROTOBUF_ENUM_IMPLICIT_ATTRS:  # FIXME: move to definition
                 return
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
