@@ -33,6 +33,34 @@ except ImportError:
     class ScalarMap:
         pass
 
+PROTOBUF_IMPLICIT_ATTRS = [
+    'ByteSize',
+    'Clear',
+    'ClearExtension',
+    'ClearField',
+    'CopyFrom',
+    'DESCRIPTOR',
+    'DiscardUnknownFields',
+    'HasExtension',
+    'HasField',
+    'IsInitialized',
+    'ListFields',
+    'MergeFrom',
+    'MergeFromString',
+    'ParseFromString',
+    'SerializePartialToString',
+    'SerializeToString',
+    'SetInParent',
+    'WhichOneof',
+]
+PROTOBUF_ENUM_IMPLICIT_ATTRS = [
+    'Name',
+    'Value',
+    'keys',
+    'values',
+    'items',
+]  # See google.protobuf.internal.enum_type_wrapper
+
 
 class SimpleDescriptor(object):
     def __init__(self, desc):
@@ -72,13 +100,14 @@ class SimpleDescriptor(object):
     def field_names(self):
         # type: () -> Set[str]
         if self._is_protobuf_enum:
-            return set(self._enum_desc.values_by_name)
+            return set(self._enum_desc.values_by_name) | set(PROTOBUF_ENUM_IMPLICIT_ATTRS)
         else:
             desc = self._desc  # type: Descriptor
             return set(desc.fields_by_name) | \
                    set(desc.enum_values_by_name) | \
                    set(desc.enum_types_by_name) | \
-                   set(desc.nested_types_by_name)
+                   set(desc.nested_types_by_name) | \
+                   set(PROTOBUF_IMPLICIT_ATTRS)
 
     @property
     def fields_by_name(self):

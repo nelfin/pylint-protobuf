@@ -203,3 +203,19 @@ class TestEnumDefinitions(CheckerTestCase):
         from {} import Variable
         print(Variable.Name(0))
         """.format(enum_mod)))
+
+    def test_enums_do_not_have_message_fields(self, enum_mod):
+        node = extract_node("""
+            from {} import Variable
+            Variable.ParseFromString("blah")
+        """.format(enum_mod))
+        msg = make_message(node.func, 'Variable', 'ParseFromString')
+        self.assert_adds_messages(node, msg)
+
+    def test_messages_do_not_have_enum_fields(self, nested_enum_mod):
+        node = extract_node("""
+            from {} import Message
+            Message.Value("ONE")
+        """.format(nested_enum_mod))
+        msg = make_message(node.func, 'Message', 'Value')
+        self.assert_adds_messages(node, msg)

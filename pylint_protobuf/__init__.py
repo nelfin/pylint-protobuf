@@ -4,7 +4,8 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
-from pylint_protobuf.transform import SimpleDescriptor
+from .transform import transform_module, is_some_protobuf_module
+from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
 _MISSING_IMPORT_IS_ERROR = False
 BASE_ID = 59
@@ -24,33 +25,6 @@ MESSAGES = {
         'is built'
     ),
 }
-PROTOBUF_IMPLICIT_ATTRS = [
-    'ByteSize',
-    'Clear',
-    'ClearExtension',
-    'ClearField',
-    'CopyFrom',
-    'DESCRIPTOR',
-    'DiscardUnknownFields',
-    'HasExtension',
-    'HasField',
-    'IsInitialized',
-    'ListFields',
-    'MergeFrom',
-    'MergeFromString',
-    'ParseFromString',
-    'SerializePartialToString',
-    'SerializeToString',
-    'SetInParent',
-    'WhichOneof',
-]
-PROTOBUF_ENUM_IMPLICIT_ATTRS = [
-    'Name',
-    'Value',
-    'keys',
-    'values',
-    'items',
-]  # See google.protobuf.internal.enum_type_wrapper
 WELLKNOWNTYPE_MODULES = [
     'any_pb2',
     'descriptor_pb2',
@@ -129,8 +103,6 @@ class ProtobufDescriptorChecker(BaseChecker):
         desc = cls_def._protobuf_descriptor  # type: SimpleDescriptor
         self._disable('no-member', node.lineno)  # Should always be checked by us instead
         if node.attrname not in desc.field_names:
-            if node.attrname in PROTOBUF_IMPLICIT_ATTRS + PROTOBUF_ENUM_IMPLICIT_ATTRS:  # FIXME: move to definition
-                return
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
             self._disable('assigning-non-slot', node.lineno)
 
@@ -151,6 +123,4 @@ class ProtobufDescriptorChecker(BaseChecker):
 def register(linter):
     linter.register_checker(ProtobufDescriptorChecker(linter))
 
-from astroid import MANAGER
-from pylint_protobuf.transform import transform_module, is_some_protobuf_module
-MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)
+astroid.MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)

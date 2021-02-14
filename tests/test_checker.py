@@ -1,5 +1,4 @@
 import sys
-import textwrap
 
 import pytest
 import astroid
