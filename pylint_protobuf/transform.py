@@ -191,11 +191,7 @@ def transform_enum(desc, descriptor_registry):
     cls_def = astroid.extract_node(_template_enum(desc, descriptor_registry))  # type: astroid.ClassDef
 
     cls_def._is_protobuf_class = True
-    # TODO: check what I'm doing with _is_protobuf_enum (since it doesn't get set on nested enums)
-    # TODO: Do test of nested enum behaviour differing to top-level enum
-    cls_def._is_protobuf_enum = True  # should be on the descriptor
     simple_desc = descriptor_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
-    cls_def._protobuf_fields = simple_desc.field_names
     cls_def._protobuf_descriptor = simple_desc
 
     names = []  # type: List[Tuple[str, astroid.Assign]]
@@ -282,7 +278,6 @@ def transform_message(desc, desc_registry):
         # type: (astroid.ClassDef) -> astroid.ClassDef
         cls_def._is_protobuf_class = True
         simple_desc = desc_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
-        cls_def._protobuf_fields = simple_desc.field_names
         cls_def._protobuf_descriptor = simple_desc
         return cls_def
 
