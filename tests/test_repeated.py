@@ -23,6 +23,18 @@ def repeated_composite_mod(proto_builder):
         }
     """)
 
+@pytest.fixture
+def repeated_external_composite_mod(proto_builder):
+    # Pretty much the same as a map entry
+    return proto_builder("""
+        message Inner {
+            required string value = 1;
+        }
+        message Outer {
+            repeated Inner values = 1;
+        }
+    """)
+
 # repeated scalar (append) vs repeated composite (add)
 
 class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
@@ -68,13 +80,12 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
-    def test_missing_field_on_repeated_warns(self, repeated_composite_mod):
+    def test_missing_field_on_repeated_inner_warns(self, repeated_composite_mod):
         node = astroid.extract_node("""
         import {repeated}
 
         outer = {repeated}.Outer()
-        inner = outer.items.add()
+        inner = outer.values.add()
         inner.invalid_field = 123  #@
         """.format(repeated=repeated_composite_mod))
         message = pylint.testutils.Message(
@@ -84,6 +95,21 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    @pytest.mark.xfail(reason='unimplemented')
+    def test_missing_field_on_repeated_warns(self, repeated_external_composite_mod):
+        node = astroid.extract_node("""
+        import {repeated}
+
+        outer = {repeated}.Outer()
+        inner = outer.values.add()
+        inner.invalid_field = 123  #@
+        """.format(repeated=repeated_external_composite_mod))
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0], args=('invalid_field', 'Inner')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
 
 @pytest.fixture
 def scalar_warnings_mod(repeated_scalar_mod, module_builder):

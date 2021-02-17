@@ -62,6 +62,19 @@ PROTOBUF_ENUM_IMPLICIT_ATTRS = [
 ]  # See google.protobuf.internal.enum_type_wrapper
 
 
+def is_repeated(fd):
+    # type: (FieldDescriptor) -> bool
+    return fd.label == FieldDescriptor.LABEL_REPEATED
+
+def is_composite(fd):
+    # type: (FieldDescriptor) -> bool
+    return fd.type == FieldDescriptor.TYPE_MESSAGE
+
+def is_map_field(fd):  # FIXME: too many selectors
+    # type: (FieldDescriptor) -> bool
+    return is_composite(fd) and fd.message_type.has_options and fd.message_type.GetOptions().map_entry
+
+
 class SimpleDescriptor(object):
     def __init__(self, desc):
         # type: (Union[EnumDescriptor, Descriptor]) -> None
@@ -72,6 +85,10 @@ class SimpleDescriptor(object):
             self._is_protobuf_enum = False
             self._desc = desc
         self._cls_hash = str(id(self))  # err...
+
+    def is_nested(self, fd):
+        # type: (FieldDescriptor) -> bool
+        return fd.message_type.containing_type is self._desc
 
     @property
     def identifier(self):
@@ -95,6 +112,11 @@ class SimpleDescriptor(object):
                 def __getattr__(self, item):
                     return None
             return FalseyAttributes()
+
+    @property
+    def fields(self):
+        # type: () -> List[FieldDescriptor]
+        return self._desc.fields
 
     @property
     def field_names(self):
@@ -124,7 +146,7 @@ class SimpleDescriptor(object):
     def message_fields(self):
         # type: () -> List[FieldDescriptor]
         assert not self._is_protobuf_enum, "Only makes sense for message descriptors"
-        return [f for f in self._desc.fields if f.type == FieldDescriptor.TYPE_MESSAGE]
+        return [f for f in self.fields if is_composite(f)]
 
     @property
     def enum_types(self):
@@ -135,11 +157,11 @@ class SimpleDescriptor(object):
         return self._desc.nested_types
 
     @property
-    def inner_fields(self):
+    def inner_nonrepeated_fields(self):
         # type: () -> List[Tuple[str, str]]
         return [
             (f.name, f.message_type.name) for f in self.message_fields
-            if f.message_type.containing_type is self._desc
+            if self.is_nested(f) and not is_repeated(f)
         ]
 
     @property
@@ -147,16 +169,15 @@ class SimpleDescriptor(object):
         # type: () -> List[Tuple[str, str]]
         return [
             (f.name, f.message_type.name) for f in self.message_fields
-            if f.message_type.containing_type is not self._desc
+            if not self.is_nested(f)
         ]
 
     @property
     def repeated_fields(self):
         # type: () -> Set[str]
         return set(
-            f.name for f in self._desc.fields
-            if f.label == FieldDescriptor.LABEL_REPEATED
-            and (f.type != FieldDescriptor.TYPE_MESSAGE)
+            f.name for f in self.fields
+            if is_repeated(f) and not is_composite(f)
         )
 
 DescriptorRegistry = MutableMapping[str, SimpleDescriptor]
@@ -201,6 +222,31 @@ def transform_enum(desc, descriptor_registry):
     return [(cls_def.name, cls_def)] + names
 
 
+def _template_composite_field(parent_name, name, field_type, is_nested=False):
+    # TODO: add some marker for it being a producer of repeated fields?
+    # it's tricky to work with inferred results
+    # as it stands the result of the call (or explicitly infer_call_result on the BoundMethod)
+    # seems to always return Uninferable
+    # maybe it'd work
+
+    # NOTE: this took some rejigging to make it work, specifically, astroid.inference didn't
+    # like the use of self for the local class definition (even if the method used some other
+    # argument so as to not shadow __init__.self. Some manual testing found parent class
+    # name to work
+
+    # also I'm not sure we need to subclass/return list, just return the appropriate type?
+
+    # looks like <Entry>CompositeContainer should be defined outside of __init__ if the type
+    # is not nested
+    qualifier = parent_name+'.' if is_nested else ''
+    return textwrap.dedent("""
+    class {field_type}CompositeContainer(object):
+        def add(self, **kwargs):
+            return {qualifier}{field_type}()
+    self.{name} = {field_type}CompositeContainer()  # repeated composite_fields
+    """.format(name=name, field_type=field_type, qualifier=qualifier))
+
+
 def _template_message(desc, descriptor_registry):
     # type: (Descriptor, DescriptorRegistry) -> str
     """
@@ -214,22 +260,39 @@ def _template_message(desc, descriptor_registry):
     # NOTE: the "pass" statement is a hack to provide a body when args is empty
     initialisers = ['pass']
     initialisers += [
-        'self.{} = self.{}()'.format(field_name, field_type)
-        for field_name, field_type in (desc.inner_fields)
+        'self.{} = self.{}()  # inner_nonrepeated_fields'.format(field_name, field_type)
+        for field_name, field_type in desc.inner_nonrepeated_fields
     ]
     initialisers += [
-        'self.{} = {}()'.format(field_name, field_type)
-        for field_name, field_type in (desc.external_fields)
+        'self.{} = {}()  # external_fields'.format(field_name, field_type)
+        for field_name, field_type in desc.external_fields
+    ]
+
+    # FIXME: some of these double up with the repeated fields
+    # e.g.
+    #   self.values = Inner()
+    #   self.values = InnerCompositeContainer()
+
+    repeated_scalar_fields = [fd.name for fd in desc.fields if is_repeated(fd) and not is_composite(fd)]
+    initialisers += [
+        'self.{} = []  # repeated_fields'.format(field_name)
+        for field_name in repeated_scalar_fields
+    ]
+
+    repeated_composite_fields = [
+        (fd.name, fd.message_type.name, desc.is_nested(fd))
+        for fd in desc.fields
+        if is_repeated(fd) and is_composite(fd) and not is_map_field(fd)
     ]
     initialisers += [
-        'self.{} = []'.format(field_name)
-        for field_name in desc.repeated_fields
+        _template_composite_field(desc.name, field_name, field_type, is_nested)
+        for field_name, field_type, is_nested in repeated_composite_fields
     ]
 
     args = ['self'] + ['{}=None'.format(f) for f in slots]
     init_str = 'def __init__({argspec}):\n{initialisers}\n'.format(
         argspec=', '.join(args),
-        initialisers=textwrap.indent('\n'.join(initialisers), '   '),
+        initialisers=textwrap.indent('\n'.join(initialisers), '    '),
     )
 
     helpers = ""
@@ -276,9 +339,13 @@ def transform_message(desc, desc_registry):
 
     def visit_classdef(cls_def):
         # type: (astroid.ClassDef) -> astroid.ClassDef
-        cls_def._is_protobuf_class = True
-        simple_desc = desc_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
-        cls_def._protobuf_descriptor = simple_desc
+        try:
+            simple_desc = desc_registry[cls_def.doc.split('=')[-1]]
+        except (AttributeError, KeyError):
+            pass # probably a helper class like CompositeContainer
+        else:
+            cls_def._is_protobuf_class = True
+            cls_def._protobuf_descriptor = simple_desc
         return cls_def
 
     # Now we can do stuff bottom-up instead of top-down...
