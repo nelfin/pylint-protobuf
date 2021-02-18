@@ -43,10 +43,21 @@ def pb2_package(module_builder, innerclass_pb2, child_pb2):
     """.format(innerclass_pb2, child_pb2), 'test_package')
 
 
+@pytest.fixture
+def person_pb2(proto_builder):
+    return proto_builder("""
+        message Person {
+          required string name = 1;
+          required int32 id = 2;
+          optional string email = 3;
+        }
+    """, 'person')
+
+
 class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    def test_unaliased_module_happy_path_should_not_warn(self):
+    def test_unaliased_module_happy_path_should_not_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -56,14 +67,14 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def test_star_import_no_errors(self):
+    def test_star_import_no_errors(self, person_pb2):
         node = astroid.extract_node("""
         from person_pb2 import *
         """)
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def test_unaliased_module_happy_path_should_warn(self):
+    def test_unaliased_module_happy_path_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -77,7 +88,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_star_import_should_warn(self):
+    def test_star_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         from person_pb2 import *
         foo = Person()
@@ -92,7 +103,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
-    def test_annassign_happy_path_should_not_warn(self):
+    def test_annassign_happy_path_should_not_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -104,7 +115,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
-    def test_annassign_attr_happy_path_should_not_warn(self):
+    def test_annassign_attr_happy_path_should_not_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -114,7 +125,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def test_unaliased_module_import_should_warn(self):
+    def test_unaliased_module_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -130,7 +141,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
-    def test_annassign_invalid_field_should_warn(self):
+    def test_annassign_invalid_field_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -146,7 +157,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
-    def test_annassign_attribute_invalid_field_should_warn(self):
+    def test_annassign_attribute_invalid_field_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
 
@@ -160,7 +171,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_module_import_should_warn(self):
+    def test_module_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2 as person
 
@@ -174,7 +185,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_module_import_as_self_should_warn(self):
+    def test_module_import_as_self_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2 as person_pb2
 
@@ -233,7 +244,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_importfrom_with_aliasing_no_warning(self):
+    def test_importfrom_with_aliasing_no_warning(self, fake_pb2):
         node = astroid.extract_node("""
         from fake_pb2 import Foo as Bar
 
@@ -246,7 +257,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def test_aliasing_via_getitem_does_not_throw(self):
+    def test_aliasing_via_getitem_does_not_throw(self, fake_pb2):
         node = astroid.extract_node("""
         from fake_pb2 import Foo
         foo = [Foo][0]()  #@
@@ -287,7 +298,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_aliasing_via_getitem_uninferable_should_not_warn(self):
+    def test_aliasing_via_getitem_uninferable_should_not_warn(self, fake_pb2):
         node = astroid.extract_node("""
         from fake_pb2 import Foo
         from random import randint
@@ -380,7 +391,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
             self.walk(node.root())
 
     @pytest.mark.xfail(reason='unimplemented')
-    def test_aliasing_via_indirection_getitem(self):
+    def test_aliasing_via_indirection_getitem(self, fake_pb2):
         node = astroid.extract_node("""
         from fake_pb2 import Foo
 
@@ -529,7 +540,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_module_import_renaming_still_warns(self):
+    def test_module_import_renaming_still_warns(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2 as person_pb2
         import person_pb2 as foobar
@@ -544,7 +555,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
             self.walk(node.root())
 
     @pytest.mark.xfail(reason='unimplemented')
-    def test_typeerror_on_attrassign(self):
+    def test_typeerror_on_attrassign(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2 as person_pb2
         p = person_pb2.Person()
