@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.17.0] - Unreleased
+## [0.17.0] - 2021-02-18
 - Add support for scalar repeated fields
 - Fix false-negative warnings on some implicitly defined protobuf message
   fields (e.g. ParseFromString is not defined on Enums, nor is Value defined on
