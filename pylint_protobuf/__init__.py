@@ -38,7 +38,9 @@ WELLKNOWNTYPE_MODULES = [
 ]
 
 
-def wellknowntype(modname):
+def wellknowntype(node):
+    # type: (astroid.Instance) -> bool
+    modname, type_ = node.pytype().rsplit('.', 1)
     return (modname in WELLKNOWNTYPE_MODULES) or \
            (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
 
@@ -89,22 +91,19 @@ class ProtobufDescriptorChecker(BaseChecker):
         # Look for any version of the inferred type to be a Protobuf class
         for val in vals:
             cls_def = None
+            if val is astroid.Uninferable:
+                continue
             if hasattr(val, '_proxied'):
+                if wellknowntype(val):
+                    self._disable('no-member', node.lineno)
+                    return
                 cls_def = val._proxied  # type: astroid.ClassDef
             elif isinstance(val, astroid.Module):
                 return self._check_module(val, node)  # FIXME: move
             elif isinstance(val, astroid.ClassDef):
                 cls_def = val
-            if cls_def:
-                if getattr(cls_def, '_is_protobuf_class', False):
-                    break  # getattr guards against Uninferable (always returns self)
-                else:
-                    # Any better way to get this? String parsing seems dirty.
-                    modname, _ = cls_def.instantiate_class().pytype().rsplit('.', 1)
-                    if wellknowntype(modname):
-                        # Disable checks for well known types
-                        self._disable('no-member', node.lineno)
-                        return
+            if cls_def and getattr(cls_def, '_is_protobuf_class', False):
+                break  # getattr guards against Uninferable (always returns self)
         else:
             # couldn't find cls_def
             return
