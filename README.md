@@ -35,9 +35,23 @@ fields from Protobuf types.
 
 ## Known Issues
 
-`pylint-protobuf` does not currently support the following concepts from the protobuf specification:
- * `oneof` fields
- * repeated fields
- * TypeError on field assignment
+`pylint-protobuf` does not currently support the following concepts:
 
-Externally defined message types are currently uninferable and so checking fields on message types may fail.
+* Externally defined messages, e.g.
+
+        import "external.proto";
+
+* Warnings of TypeError on field assignment, e.g.
+
+        msg.a_string_field = 123  # would raise TypeError
+
+* Warnings of attribute assignment to composite field, e.g.
+
+        msg.inner = msg.Inner(value=123)  # would raise AttributeError
+
+* Warnings on undefined attributes on non-nested composite types, e.g.
+
+        msg.inner.should_warn = 123
+  Due to the way that types are checked, these are not currently correctly
+  inferred and so will not raise any warnings.
+

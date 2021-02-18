@@ -10,7 +10,7 @@ try:
         EnumDescriptor,
         FieldDescriptor,
     )
-except ImportError:
+except ImportError:  # pragma: nocover
     import sys
     import warnings
     if sys.version_info >= (3, 9):
@@ -27,7 +27,7 @@ except ImportError:
 
 try:
     from google.protobuf.internal.containers import ScalarMap, MessageMap
-except ImportError:
+except ImportError:  # pragma: nocover
     class MessageMap:
         pass
     class ScalarMap:
