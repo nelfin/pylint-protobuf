@@ -95,8 +95,16 @@ class ProtobufDescriptorChecker(BaseChecker):
                 return self._check_module(val, node)  # FIXME: move
             elif isinstance(val, astroid.ClassDef):
                 cls_def = val
-            if cls_def and getattr(cls_def, '_is_protobuf_class', False):
-                break  # getattr guards against Uninferable (always returns self)
+            if cls_def:
+                if getattr(cls_def, '_is_protobuf_class', False):
+                    break  # getattr guards against Uninferable (always returns self)
+                else:
+                    # Any better way to get this? String parsing seems dirty.
+                    modname, _ = cls_def.instantiate_class().pytype().rsplit('.', 1)
+                    if wellknowntype(modname):
+                        # Disable checks for well known types
+                        self._disable('no-member', node.lineno)
+                        return
         else:
             # couldn't find cls_def
             return
