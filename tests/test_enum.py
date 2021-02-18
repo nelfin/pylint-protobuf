@@ -54,6 +54,19 @@ def package_nested_enum_mod(proto_builder):
     """, 'nested_enum', package='package')
 
 
+@pytest.fixture
+def innerclass_dict_mod(proto_builder):
+    return proto_builder("""
+    message OuterClass {
+      enum InnerEnum {
+          ENUM_1 = 0;
+          ENUM_2 = 1;
+      }
+      InnerEnum enum = 2;
+    }
+    """, preamble='syntax = "proto3";\npackage test;\n')
+
+
 class TestEnumDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
@@ -189,12 +202,12 @@ class TestEnumDefinitions(CheckerTestCase):
         msg = make_message(node.targets[0], 'Inner', 'NOPE')
         self.assert_adds_messages(node, msg)
 
-    def test_nested_enum_dict(self):
+    def test_nested_enum_dict(self, innerclass_dict_mod):
         outer = extract_node("""
-        from fixture.innerclass_dict_pb2 import OuterClass
+        from {} import OuterClass
         enum = OuterClass.InnerEnum.ENUM_1
         outer = OuterClass(enum=enum)
-        """)
+        """.format(innerclass_dict_mod))
         with self.assertNoMessages():
             self.walk(outer.root())
 

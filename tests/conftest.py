@@ -12,7 +12,7 @@ from pylint.testutils import MinimalTestReporter
 import pylint_protobuf
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture(autouse=True)
 def error_on_missing_modules():
     oldval = pylint_protobuf._MISSING_IMPORT_IS_ERROR
     pylint_protobuf._MISSING_IMPORT_IS_ERROR = True

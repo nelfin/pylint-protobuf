@@ -17,6 +17,33 @@ def fake_pb2(proto_builder):
     """, name='fake')
 
 
+@pytest.fixture
+def innerclass_pb2(proto_builder):
+    return proto_builder("""
+        message Person {
+          message Alias {
+            required string name = 1;
+          }
+          required Alias primary_alias = 2;
+        }
+    """, 'innerclass')
+
+
+@pytest.fixture
+def child_pb2(proto_builder):
+    return proto_builder("""
+        message Child {}
+    """, 'child')
+
+
+@pytest.fixture
+def pb2_package(module_builder, innerclass_pb2, child_pb2):
+    return module_builder("""
+    import {}
+    import {}
+    """.format(innerclass_pb2, child_pb2), 'test_package')
+
+
 class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
@@ -458,12 +485,12 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def test_issue13_importing_a_module_from_package(self):
+    def test_issue13_importing_a_module_from_package(self, innerclass_pb2):
         node = astroid.extract_node("""
-        from fixture import innerclass_pb2
-        p = innerclass_pb2.Person()
+        import {mod}
+        p = {mod}.Person()
         p.should_warn = 123
-        """)
+        """.format(mod=innerclass_pb2))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
@@ -471,12 +498,12 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_issue13_importing_a_module_with_alias_from_package(self):
+    def test_issue13_importing_a_module_with_alias_from_package(self, innerclass_pb2):
         node = astroid.extract_node("""
-        from fixture import innerclass_pb2 as foo
+        import {mod} as foo
         p = foo.Person()
         p.should_warn = 123
-        """)
+        """.format(mod=innerclass_pb2))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
@@ -484,18 +511,18 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    def test_issue13_importing_many_modules_from_package_no_errors(self):
+    def test_issue13_importing_many_modules_from_package_no_errors(self, pb2_package):
         node = astroid.extract_node("""
-        from fixture import innerclass_pb2, child_pb2
-        """)
+        from {} import innerclass_pb2, child_pb2
+        """.format(pb2_package))
         self.walk(node.root())
 
-    def test_issue13_importing_many_modules_with_aliases_from_package(self):
+    def test_issue13_importing_many_modules_with_aliases_from_package(self, pb2_package):
         node = astroid.extract_node("""
-        from fixture import child_pb2 as bar, innerclass_pb2 as foo
+        from {} import child_pb2 as bar, innerclass_pb2 as foo
         p = foo.Person()
         p.should_warn = 123
-        """)
+        """.format(pb2_package))
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')

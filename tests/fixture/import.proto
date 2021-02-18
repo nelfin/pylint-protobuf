@@ -1,8 +1,0 @@
-syntax = "proto2";
-
-package test;
-import "child.proto";
-
-message Parent {
-    required Child child = 1;
-}
