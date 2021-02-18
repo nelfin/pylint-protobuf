@@ -1,3 +1,5 @@
+import textwrap
+
 import pytest
 import astroid
 import pylint.testutils
@@ -80,3 +82,30 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
             """.format(module=module, wkt=wkt, field=field))
             with self.assertNoMessages():
                 self.walk(node.root())
+
+
+@pytest.fixture
+def mod_template(module_builder):
+    def template(module, wkt, fields):
+        fstr = ['t.{}()'.format(f) for f in fields]
+        mod_str = textwrap.dedent("""
+            from google.protobuf.{module} import {wkt}
+            t = {wkt}()
+            {fstrs}
+        """).format(
+            module=module, wkt=wkt, fstrs='\n'.join(fstr)
+        )
+        return module_builder(mod_str, name=module+'_'+wkt)
+    return template
+
+
+@pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
+def test_issue37_wkt_no_E1101(module, wkt, fields, mod_template, linter_factory):
+    mod = mod_template(module, wkt, fields)
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert not actual_messages
