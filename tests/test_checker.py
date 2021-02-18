@@ -486,7 +486,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         self.walk(node.root())
 
     @pytest.mark.parametrize("attr", pylint_protobuf.PROTOBUF_IMPLICIT_ATTRS)
-    def test_implicit_attrs_issue8(self, attr):
+    def test_implicit_attrs_issue8(self, attr, person_pb2):
         node = astroid.extract_node("""
         from person_pb2 import Person
         p = Person()

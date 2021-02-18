@@ -11,7 +11,18 @@ except ImportError:
 
 
 @pytest.fixture
-def e1101_mod(module_builder):
+def person_pb2(proto_builder):
+    return proto_builder("""
+        message Person {
+          required string name = 1;
+          required int32 id = 2;
+          optional string email = 3;
+        }
+    """, 'person')
+
+
+@pytest.fixture
+def e1101_mod(module_builder, person_pb2):
     return module_builder("""
         from person_pb2 import Person
 
