@@ -1,5 +1,15 @@
 # pylint-protobuf
 
+## [0.17.0] - Unreleased
+- Add support for scalar repeated fields
+- Fix false-negative warnings on some implicitly defined protobuf message
+  fields (e.g. ParseFromString is not defined on Enums, nor is Value defined on
+  messages)
+- Add partial support for composite repeated fields (only nested messages
+  currently supported)
+- Fix integration with default typecheck checker (E1101 no-member warnings) on
+  protobuf well-known types (#37). Thanks @mabrowning for the PR.
+
 ## [0.16.0] - 2021-02-13
 - Allow warnings on unknown keyword arguments in protobuf message constructors
   (originally suppressed to fix #30)
