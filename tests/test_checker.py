@@ -125,6 +125,22 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
+    @pytest.mark.skipif(sys.version_info < (3, 6),
+                        reason='AnnAssign requires Python 3.6+')
+    def test_annassign_should_warn_if_necessary(self, person_pb2):
+        node = astroid.extract_node("""
+        import person_pb2
+
+        foo: Person = person_pb2.Person()
+        foo.should_warn: int = 123  #@
+        """)  # type: astroid.AnnAssign
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.target, args=('should_warn', 'Person')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
     def test_unaliased_module_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2
