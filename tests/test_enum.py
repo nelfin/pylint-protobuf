@@ -1,6 +1,7 @@
 import sys
 
 import pytest
+import pylint.testutils
 
 import pylint_protobuf
 from conftest import CheckerTestCase, extract_node, make_message
@@ -118,15 +119,68 @@ class TestEnumDefinitions(CheckerTestCase):
         msg = make_message(node, 'Variable', 'should_warn')
         self.assert_adds_messages(node, msg)
 
-    @pytest.mark.xfail(reason='unimplemented')
     def test_import_enum_missing_attribute_by_value_warns(self, enum_mod):
         node = extract_node("""
         from {} import Variable
-        print(
-            Variable.Value('should_warn')  #@
-        )
+        Variable.Value('should_warn')  #@
         """.format(enum_mod))
-        msg = make_message(node, 'Variable', 'should_warn')
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=('should_warn', 'Variable')
+        )
+        self.assert_adds_messages(node, msg)
+
+    def test_missing_value_inference_warns(self, enum_mod):
+        node = extract_node("""
+        from {} import Variable
+        a = 'should_warn'
+        Variable.Value(a)
+        """.format(enum_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=('should_warn', 'Variable')
+        )
+        self.assert_adds_messages(node, msg)
+
+    def test_missing_value_uniferable_no_error(self, enum_mod):
+        node = extract_node("""
+        from {} import Variable
+        a = get_external()
+        Variable.Value(a)
+        """.format(enum_mod))
+        self.assert_no_messages(node)
+
+    @pytest.mark.xfail(reason='debating whether this case should be implemented')
+    def test_missing_attribute_by_value_indirect_warns(self, enum_mod):
+        node = extract_node("""
+        from {} import Variable
+        func = Variable.Value
+        func('should_warn')
+        """.format(enum_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=('should_warn', 'Variable')
+        )
+        self.assert_adds_messages(node, msg)
+
+    def test_looks_like_enum_value_should_not_warn(self, enum_mod):
+        node = extract_node("""
+        class Variable(object):
+            def Value(*args):
+                pass
+        Variable.Value('should_not_warn', 'even_with_extra_args')
+        """.format(enum_mod))
+        self.assert_no_messages(node)
+
+    def test_missing_value_on_nested_enum_warns(self, nested_enum_mod):
+        node = extract_node("""
+        from {} import Message
+        Message.Inner.Value('should_warn')
+        """.format(nested_enum_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=('should_warn', 'Inner')
+        )
         self.assert_adds_messages(node, msg)
 
     def test_issue16_toplevel_enum(self, nested_enum_mod):

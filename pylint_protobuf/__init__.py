@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional, List
 
 import astroid
 from pylint.checkers import BaseChecker, utils
@@ -36,6 +36,7 @@ WELLKNOWNTYPE_MODULES = [
     'type_pb2',
     'wrappers_pb2',
 ]
+Node = astroid.node_classes.NodeNG
 
 
 def wellknowntype(node):
@@ -43,6 +44,36 @@ def wellknowntype(node):
     modname, type_ = node.pytype().rsplit('.', 1)
     return (modname in WELLKNOWNTYPE_MODULES) or \
            (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
+
+
+def _get_inferred_values(node):
+    # type: (Node) -> List[Node]
+    try:
+        vals = node.inferred()
+    except astroid.InferenceError:
+        return []
+    return [v for v in vals if v is not astroid.Uninferable]
+
+
+def _get_protobuf_descriptor(node):
+    # type: (Node) -> Optional[SimpleDescriptor]
+    # Look for any version of the inferred type to be a Protobuf class
+    for val in _get_inferred_values(node):
+        cls_def = None
+        if hasattr(val, '_proxied'):
+            # if wellknowntype(val):  # where to put this side-effect?
+            #     self._disable('no-member', node.lineno)
+            #     return
+            cls_def = val._proxied  # type: astroid.ClassDef
+        # elif isinstance(val, astroid.Module):
+        #     return self._check_module(val, node)  # FIXME: move
+        elif isinstance(val, astroid.ClassDef):
+            cls_def = val
+        if cls_def and getattr(cls_def, '_is_protobuf_class', False):
+            break  # getattr guards against Uninferable (always returns self)
+    else:
+        return # couldn't find cls_def
+    return cls_def._protobuf_descriptor  # type: SimpleDescriptor
 
 
 class ProtobufDescriptorChecker(BaseChecker):
@@ -71,6 +102,30 @@ class ProtobufDescriptorChecker(BaseChecker):
             node.do_import_module(modname)
         except astroid.AstroidBuildingError:
             assert not _MISSING_IMPORT_IS_ERROR, 'expected to import module "{}"'.format(modname)
+
+    @utils.check_messages('protobuf-enum-value')
+    def visit_call(self, node):
+        if len(node.args) != 1:
+            return  # protobuf enum .Value() is only called with one argument
+        value_node = node.args[0]
+        func = node.func
+        if not isinstance(func, astroid.Attribute):
+            # NOTE: inference fails on this case
+            #   f = Enum.Value  # <-
+            #   f('some_value')
+            return
+        if func.attrname != 'Value':
+            return
+        desc = _get_protobuf_descriptor(func.expr)
+        if desc is None or not desc.is_enum:
+            return
+        for val_const in _get_inferred_values(value_node):
+            if not hasattr(val_const, 'value'):
+                continue
+            val = val_const.value
+            if val not in desc.values:
+                self.add_message('protobuf-enum-value', args=(val, desc.name), node=node)
+                break  # should we continue to check?
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):

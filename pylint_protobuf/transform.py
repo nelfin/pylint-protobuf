@@ -96,6 +96,10 @@ class SimpleDescriptor(object):
         return self._cls_hash
 
     @property
+    def is_enum(self):
+        return self._is_protobuf_enum
+
+    @property
     def name(self):
         # type: () -> str
         if self._is_protobuf_enum:
@@ -135,6 +139,12 @@ class SimpleDescriptor(object):
     def fields_by_name(self):
         # type: () -> Dict[str, FieldDescriptor]
         return self._desc.fields_by_name
+
+    @property
+    def values(self):
+        # type: () -> Dict[str, int]
+        assert self._is_protobuf_enum, "Only makes sense for enum descriptors"
+        return {n: v.number for n, v in self._enum_desc.values_by_name.items()}
 
     @property
     def values_by_name(self):
