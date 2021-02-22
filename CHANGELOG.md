@@ -1,8 +1,8 @@
 # pylint-protobuf
 
 ## [0.18.0] - Unreleased
-- Add support for checking missing enum value. This introduces a new warning
-  message "protobuf-enum-value"
+- Add support for checking invalid enum values and names. This introduces a new
+  warning message "protobuf-enum-value"
 
 ## [0.17.0] - 2021-02-18
 - Add support for scalar repeated fields

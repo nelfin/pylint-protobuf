@@ -114,16 +114,17 @@ class ProtobufDescriptorChecker(BaseChecker):
             #   f = Enum.Value  # <-
             #   f('some_value')
             return
-        if func.attrname != 'Value':
+        if func.attrname not in ('Value', 'Name'):
             return
         desc = _get_protobuf_descriptor(func.expr)
         if desc is None or not desc.is_enum:
             return
+        expected = desc.values if func.attrname == 'Value' else desc.names
         for val_const in _get_inferred_values(value_node):
             if not hasattr(val_const, 'value'):
                 continue
             val = val_const.value
-            if val not in desc.values:
+            if val not in expected:
                 self.add_message('protobuf-enum-value', args=(val, desc.name), node=node)
                 break  # should we continue to check?
 

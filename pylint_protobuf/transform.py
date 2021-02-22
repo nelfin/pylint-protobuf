@@ -147,6 +147,12 @@ class SimpleDescriptor(object):
         return {n: v.number for n, v in self._enum_desc.values_by_name.items()}
 
     @property
+    def names(self):
+        # type: () -> Dict[int, str]
+        assert self._is_protobuf_enum, "Only makes sense for enum descriptors"
+        return {v.number: n for n, v in self._enum_desc.values_by_name.items()}
+
+    @property
     def values_by_name(self):
         # type: () -> List[Tuple[str, int]]
         assert self._is_protobuf_enum, "Only makes sense for enum descriptors"

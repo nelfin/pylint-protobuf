@@ -271,6 +271,48 @@ class TestEnumDefinitions(CheckerTestCase):
         print(Variable.Name(0))
         """.format(enum_mod)))
 
+    def test_name_from_invalid_value_warns(self, enum_mod):
+        node = extract_node("""
+            from {} import Variable
+            Variable.Name(123)
+        """.format(enum_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=(123, 'Variable')
+        )
+        self.assert_adds_messages(node, msg)
+
+    def test_names_are_not_values(self, enum_mod):
+        node = extract_node("""
+            from {} import Variable
+            Variable.Name('CONTINUOUS')
+        """.format(enum_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=('CONTINUOUS', 'Variable')
+        )
+        self.assert_adds_messages(node, msg)
+
+    def test_name_from_inferable_warns(self, enum_mod):
+        node = extract_node("""
+            from {} import Variable
+            b = 123
+            Variable.Name(b)
+        """.format(enum_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-enum-value',
+            node=node, args=(123, 'Variable')
+        )
+        self.assert_adds_messages(node, msg)
+
+    def test_name_from_uninferable_no_warn(self, enum_mod):
+        node = extract_node("""
+            from {} import Variable
+            b = get_external_value()
+            Variable.Name(b)
+        """.format(enum_mod))
+        self.assert_no_messages(node)
+
     def test_enums_do_not_have_message_fields(self, enum_mod):
         node = extract_node("""
             from {} import Variable
