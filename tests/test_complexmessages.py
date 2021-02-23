@@ -113,7 +113,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.xfail(reason='unimplemented external types inference')
     def test_mutually_recursive_warns(self, mutual_pb2):
         node = astroid.extract_node("""
         from {} import A

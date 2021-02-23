@@ -60,11 +60,11 @@ def posargs_mod(kwarg_mod, module_builder):
     """.format(kwarg_mod), 'posargs_mod')
 
 
-@pytest.mark.xfail(reason='unimplemented')
+@pytest.mark.xfail(reason='unimplemented protobuf-no-posargs')
 def test_warn_typeerror_on_positional_args(posargs_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
-        disable=['all'], enable=['protobuf-type-error'],  # TODO
+        disable=['all'], enable=['protobuf-no-posargs'],
     )
     linter.check([posargs_mod])
     expected_messages = [

@@ -50,7 +50,7 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.xfail(reason='unimplemented protobuf-no-assignment')
     def test_repeated_attrassign(self, repeated_scalar_mod):
         node = astroid.extract_node("""
             import {repeated}
@@ -59,13 +59,13 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
             msg.values = ["abc", "def"]
         """.format(repeated=repeated_scalar_mod))
         message = pylint.testutils.Message(
-            'protobuf-repeated-assignment',  # TODO
+            'protobuf-no-assignment',
             node=node.targets[0], args=('values', 'Repeated')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.xfail(reason='unimplemented protobuf-type-error')
     def test_scalar_typeerror(self, repeated_scalar_mod):
         node = astroid.extract_node("""
             import {repeated}
@@ -74,7 +74,7 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
             msg.values.append(123)
         """.format(repeated=repeated_scalar_mod))
         message = pylint.testutils.Message(
-            'protobuf-type-error',  # TODO
+            'protobuf-type-error',
             node=node, args=('values', 'Repeated')
         )
         with self.assertAddsMessages(message):
@@ -95,7 +95,7 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.xfail(reason='unimplemented external types inference')
     def test_missing_field_on_repeated_warns(self, repeated_external_composite_mod):
         node = astroid.extract_node("""
         import {repeated}

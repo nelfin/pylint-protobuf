@@ -406,7 +406,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(*messages):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.xfail(reason='wontfix')
     def test_aliasing_via_indirection_getitem(self, fake_pb2):
         node = astroid.extract_node("""
         from fake_pb2 import Foo
@@ -485,7 +485,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         """)
         self.walk(node.root())
 
-    @pytest.mark.skip(reason='probably should be Uninferable')
+    @pytest.mark.skip(reason='wontfix: probably should be Uninferable')
     def test_issue7_indexerror_on_correct_slice_inference(self):
         # TODO: this shouldn't raise IndexError, like above, but the value of
         # bar could be correctly inferred unlike above. Should we do this, and
@@ -570,7 +570,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented')
+    @pytest.mark.xfail(reason='unimplemented protobuf-type-error')
     def test_typeerror_on_attrassign(self, person_pb2):
         node = astroid.extract_node("""
         import person_pb2 as person_pb2
@@ -578,7 +578,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         p.name = 123
         """)
         message = pylint.testutils.Message(
-            'protobuf-type-error',  # TODO
+            'protobuf-type-error',
             node=node.targets[0], args=('name', 'Person')
         )
         with self.assertAddsMessages(message):
