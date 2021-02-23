@@ -75,6 +75,36 @@ def is_map_field(fd):  # FIXME: too many selectors
     return is_composite(fd) and fd.message_type.has_options and fd.message_type.GetOptions().map_entry
 
 
+class TODO(object):
+    pass  # These fields are not assignable
+
+
+FIELD_TYPES = {
+    FieldDescriptor.TYPE_BOOL: bool,
+    FieldDescriptor.TYPE_BYTES: str,
+    FieldDescriptor.TYPE_DOUBLE: float,
+    FieldDescriptor.TYPE_ENUM: TODO,
+    FieldDescriptor.TYPE_FIXED32: float,
+    FieldDescriptor.TYPE_FIXED64: float,
+    FieldDescriptor.TYPE_FLOAT: float,
+    FieldDescriptor.TYPE_GROUP: TODO,
+    FieldDescriptor.TYPE_INT32: int,
+    FieldDescriptor.TYPE_INT64: int,
+    FieldDescriptor.TYPE_MESSAGE: TODO,
+    FieldDescriptor.TYPE_SFIXED32: float,
+    FieldDescriptor.TYPE_SFIXED64: float,
+    FieldDescriptor.TYPE_SINT32: int,
+    FieldDescriptor.TYPE_SINT64: int,
+    FieldDescriptor.TYPE_STRING: str,
+    FieldDescriptor.TYPE_UINT32: int,
+    FieldDescriptor.TYPE_UINT64: int,
+}
+
+def to_pytype(fd):
+    # type: (FieldDescriptor) -> type
+    return FIELD_TYPES[fd.type]
+
+
 class SimpleDescriptor(object):
     def __init__(self, desc):
         # type: (Union[EnumDescriptor, Descriptor]) -> None

@@ -58,6 +58,20 @@ class TestProtobufOneofFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    @pytest.mark.xfail(reason='unimplemented protobuf-no-assignment')
+    def test_scalar_assignment_to_composite_field(self, oneof_composite_pb2):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.CompositeOneof()
+            msg.name = 'Example'
+        """.format(mod=oneof_composite_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-no-assignment',
+            node=node.targets[0], args=('name', 'CompositeOneof')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
     def test_composite_field_warnings(self, oneof_composite_pb2):
         node = astroid.extract_node("""
             import {mod}

@@ -41,10 +41,6 @@ fields from Protobuf types.
 
         import "external.proto";
 
-* Warnings of TypeError on field assignment, e.g.
-
-        msg.a_string_field = 123  # would raise TypeError
-
 * Warnings of attribute assignment to composite field, e.g.
 
         msg.inner = msg.Inner(value=123)  # would raise AttributeError

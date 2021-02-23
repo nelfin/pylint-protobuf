@@ -4,7 +4,7 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
-from .transform import transform_module, is_some_protobuf_module
+from .transform import transform_module, is_some_protobuf_module, to_pytype
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
 _MISSING_IMPORT_IS_ERROR = False
@@ -23,6 +23,12 @@ MESSAGES = {
         'protobuf-enum-value',
         'Used when an undefined enum value of a protobuf generated enum '
         'is built'
+    ),
+    'E%02d03' % BASE_ID: (
+        'Field "%s.%s" is of type %r and value %r will raise TypeError '
+        'at runtime',
+        'protobuf-type-error',
+        'Used when a scalar field is written to by a bad value'
     ),
 }
 WELLKNOWNTYPE_MODULES = [
@@ -168,6 +174,28 @@ class ProtobufDescriptorChecker(BaseChecker):
         if node.attrname not in desc.field_names:
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
             self._disable('assigning-non-slot', node.lineno)
+        else:
+            self._check_type_error(node, desc)
+
+    @utils.check_messages('protobuf-type-error')
+    def _check_type_error(self, node, desc):
+        # type: (Node, SimpleDescriptor) -> None
+        if not isinstance(node, astroid.AssignAttr):
+            return
+        attr = node.attrname
+        value_node = node.parent.value  # type: Node
+        fd = desc.fields_by_name[attr]
+        type_ = to_pytype(fd)
+        if type_.__name__ == 'TODO':
+            # XXX: composite field
+            return
+        for val_const in _get_inferred_values(value_node):
+            if not hasattr(val_const, 'value'):
+                continue
+            val = val_const.value
+            if not isinstance(val, type_):
+                self.add_message('protobuf-type-error', node=node, args=(desc.name, attr, type_.__name__, val))
+                break
 
     def _check_module(self, mod, node):
         # type: (astroid.Module, astroid.Attribute) -> None
