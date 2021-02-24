@@ -119,6 +119,7 @@ class ProtobufDescriptorChecker(BaseChecker):
     def visit_call(self, node):
         self._check_enum_values(node)
         self._check_init_posargs(node)
+        self._check_init_kwargs(node)
 
     @utils.check_messages('protobuf-enum-value')
     def _check_enum_values(self, node):
@@ -151,6 +152,25 @@ class ProtobufDescriptorChecker(BaseChecker):
         desc = _get_protobuf_descriptor(node.func)
         if desc is not None and len(node.args) > 0:
             self.add_message('protobuf-no-posargs', node=node)
+
+    @utils.check_messages('protobuf-type-error')
+    def _check_init_kwargs(self, node):
+        # type: (astroid.Call) -> None
+        desc = _get_protobuf_descriptor(node.func)
+        keywords = node.keywords or []
+        for kw in keywords:
+            arg_name, val_node = kw.arg, kw.value
+            if arg_name not in desc.fields_by_name:
+                continue  # should raise "unexpected-keyword-arg"
+            arg_type = to_pytype(desc.fields_by_name[arg_name])
+            for val_const in _get_inferred_values(val_node):
+                if not hasattr(val_const, 'value'):
+                    continue
+                val = val_const.value
+                if not isinstance(val, arg_type):
+                    self.add_message('protobuf-type-error', node=node,
+                                     args=(desc.name, arg_name, arg_type.__name__, val))
+                    break
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):

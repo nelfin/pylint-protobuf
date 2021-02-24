@@ -1,7 +1,11 @@
+from contextlib import contextmanager
+
 import pytest
+import astroid
 import pylint.checkers.typecheck
 
 import pylint_protobuf
+from pylint_protobuf.transform import transform_module, is_some_protobuf_module
 
 
 @pytest.fixture
@@ -71,4 +75,42 @@ def test_warn_typeerror_on_positional_args(posargs_mod, linter_factory):
     ]
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert actual_messages  # to make this XPASS
+    assert sorted(actual_messages) == sorted(expected_messages)
+
+
+@pytest.fixture
+def unknown_kwarg_mod(kwarg_mod, module_builder):
+    return module_builder("""
+        from {mod} import Count
+        c = Count(x=0, should_warn=123)
+    """.format(mod=kwarg_mod), 'unknown_kwarg_mod')
+
+
+@contextmanager
+def no_transform():
+    astroid.MANAGER.unregister_transform(astroid.Module, transform_module, is_some_protobuf_module)
+    try:
+        yield
+    finally:
+        astroid.MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)
+
+
+def test_without_checker_has_false_negative(unknown_kwarg_mod, linter_factory):
+    with no_transform():
+        linter = linter_factory(disable=['all'], enable=['unexpected-keyword-arg'])
+        linter.check([unknown_kwarg_mod])
+        actual_messages = [m.msg for m in linter.reporter.messages]
+        assert not actual_messages
+
+
+def test_with_checker_fixes_false_negative(unknown_kwarg_mod, linter_factory):
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['unexpected-keyword-arg'],
+    )
+    linter.check([unknown_kwarg_mod])
+    expected_messages = [
+        pylint.checkers.typecheck.MSGS['E1123'][0] % ('should_warn', 'constructor')
+    ]
+    actual_messages = [m.msg for m in linter.reporter.messages]
     assert sorted(actual_messages) == sorted(expected_messages)

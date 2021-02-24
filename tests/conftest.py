@@ -89,7 +89,7 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
 
 @pytest.fixture
 def linter_factory():
-    def linter(register, enable, disable):
+    def linter(register=None, enable=None, disable=None):
         _linter = PyLinter()
         _linter.set_reporter(MinimalTestReporter())
         checkers.initialize(_linter)

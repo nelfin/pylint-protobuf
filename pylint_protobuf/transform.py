@@ -83,7 +83,7 @@ FIELD_TYPES = {
     FieldDescriptor.TYPE_BOOL: bool,
     FieldDescriptor.TYPE_BYTES: str,
     FieldDescriptor.TYPE_DOUBLE: float,
-    FieldDescriptor.TYPE_ENUM: TODO,
+    FieldDescriptor.TYPE_ENUM: int,
     FieldDescriptor.TYPE_FIXED32: float,
     FieldDescriptor.TYPE_FIXED64: float,
     FieldDescriptor.TYPE_FLOAT: float,
