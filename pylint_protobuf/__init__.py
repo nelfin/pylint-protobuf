@@ -30,6 +30,13 @@ MESSAGES = {
         'protobuf-type-error',
         'Used when a scalar field is written to by a bad value'
     ),
+    'E%02d04' % BASE_ID: (
+        'Positional arguments are not allowed in message constructors and '
+        'will raise TypeError',
+        'protobuf-no-posargs',
+        'Used when a message class is initialised with positional '
+        'arguments instead of keyword arguments'
+    ),
 }
 WELLKNOWNTYPE_MODULES = [
     'any_pb2',
@@ -109,8 +116,12 @@ class ProtobufDescriptorChecker(BaseChecker):
         except astroid.AstroidBuildingError:
             assert not _MISSING_IMPORT_IS_ERROR, 'expected to import module "{}"'.format(modname)
 
-    @utils.check_messages('protobuf-enum-value')
     def visit_call(self, node):
+        self._check_enum_values(node)
+        self._check_init_posargs(node)
+
+    @utils.check_messages('protobuf-enum-value')
+    def _check_enum_values(self, node):
         if len(node.args) != 1:
             return  # protobuf enum .Value() is only called with one argument
         value_node = node.args[0]
@@ -133,6 +144,13 @@ class ProtobufDescriptorChecker(BaseChecker):
             if val not in expected:
                 self.add_message('protobuf-enum-value', args=(val, desc.name), node=node)
                 break  # should we continue to check?
+
+    @utils.check_messages('protobuf-no-posargs')
+    def _check_init_posargs(self, node):
+        # type: (astroid.Call) -> None
+        desc = _get_protobuf_descriptor(node.func)
+        if desc is not None and len(node.args) > 0:
+            self.add_message('protobuf-no-posargs', node=node)
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):

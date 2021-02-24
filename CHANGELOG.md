@@ -5,6 +5,8 @@
   warning message "protobuf-enum-value"
 - Add support for type checking scalar fields. This introduces a new warning
   message "protobuf-type-error"
+- Add warning for use of positional arguments on message constructors. This
+  introduces a new warning message "protobuf-type-error"
 
 ## [0.17.0] - 2021-02-18
 - Add support for scalar repeated fields
