@@ -102,6 +102,8 @@ FIELD_TYPES = {
 
 def to_pytype(fd):
     # type: (FieldDescriptor) -> type
+    if is_composite(fd):
+        return type(fd.message_type.name, (TODO,), {})  # XXX: such a hack!
     return FIELD_TYPES[fd.type]
 
 
@@ -119,6 +121,10 @@ class SimpleDescriptor(object):
     def is_nested(self, fd):
         # type: (FieldDescriptor) -> bool
         return fd.message_type.containing_type is self._desc
+
+    def is_typeof_field(self, fd):
+        # type: (FieldDescriptor) -> bool
+        return fd.message_type is self._desc
 
     @property
     def identifier(self):

@@ -4,7 +4,7 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
-from .transform import transform_module, is_some_protobuf_module, to_pytype
+from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
 _MISSING_IMPORT_IS_ERROR = False
@@ -162,15 +162,38 @@ class ProtobufDescriptorChecker(BaseChecker):
             arg_name, val_node = kw.arg, kw.value
             if arg_name not in desc.fields_by_name:
                 continue  # should raise "unexpected-keyword-arg"
-            arg_type = to_pytype(desc.fields_by_name[arg_name])
-            for val_const in _get_inferred_values(val_node):
-                if not hasattr(val_const, 'value'):
-                    continue
-                val = val_const.value
-                if not isinstance(val, arg_type):
-                    self.add_message('protobuf-type-error', node=node,
-                                     args=(desc.name, arg_name, arg_type.__name__, val))
-                    break
+            fd = desc.fields_by_name[arg_name]
+            arg_type = to_pytype(fd)
+            if is_composite(fd):
+                # messages
+                for val in _get_inferred_values(val_node):
+                    if isinstance(val, astroid.Const):
+                        self.add_message('protobuf-type-error', node=node,
+                                         args=(desc.name, arg_name, arg_type.__name__, val.value))
+                        break
+                    val_desc = _get_protobuf_descriptor(val)
+                    if val_desc is None:
+                        continue  # XXX: ignore?
+                    if not val_desc.is_typeof_field(fd):
+                        val = '{}()'.format(val_desc.name)
+                        self.add_message('protobuf-type-error', node=node,
+                                         args=(desc.name, arg_name, arg_type.__name__, val))
+            else:
+                for val_const in _get_inferred_values(val_node):
+                    if not hasattr(val_const, 'value'):
+                        try:
+                            val = '{}()'.format(val_const.name)
+                        except AttributeError:
+                            continue
+                        self.add_message('protobuf-type-error', node=node,
+                                         args=(desc.name, arg_name, arg_type.__name__, val))
+                        break
+                    val = val_const.value
+                    if not isinstance(val, arg_type):
+                        self.add_message('protobuf-type-error', node=node,
+                                         args=(desc.name, arg_name, arg_type.__name__, val))
+                        break
+
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):
