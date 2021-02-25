@@ -120,6 +120,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._check_enum_values(node)
         self._check_init_posargs(node)
         self._check_init_kwargs(node)
+        self._check_repeated_scalar(node)
 
     @utils.check_messages('protobuf-enum-value')
     def _check_enum_values(self, node):
@@ -194,6 +195,60 @@ class ProtobufDescriptorChecker(BaseChecker):
                                          args=(desc.name, arg_name, arg_type.__name__, val))
                         break
 
+    @utils.check_messages('protobuf-type-error')
+    def _check_repeated_scalar(self, node):
+        # type: (astroid.Call) -> None
+        if len(node.args) != 1:
+            return  # append and extend take one argument
+        arg_node = node.args[0]
+        func = node.func
+        if not isinstance(func, astroid.Attribute):
+            # NOTE: inference fails on this case
+            #   f = Enum.Value  # <-
+            #   f('some_value')
+            return  # FIXME: check
+        if func.attrname not in ('append', 'extend'):
+            return
+
+        arg_infer = _get_inferred_values(arg_node)
+        if len(arg_infer) != 1:
+            return  # no point warning on ambiguous types
+        arg = arg_infer[0]
+
+        if func.attrname == 'append':
+            if not hasattr(arg, 'value'):
+                return
+            vals = [arg.value]
+        else:  # 'extend'
+            if not hasattr(arg, 'elts'):
+                return  # FIXME: check how to deal with arbitrary iterables
+            vals = []
+            for elem in arg.elts:
+                c = _get_inferred_values(elem)
+                if c is None:
+                    continue
+                c = c[0]
+                if not hasattr(c, 'value'):
+                    continue
+                vals.append(c.value)
+
+        expr = func.expr
+        try:
+            desc = _get_protobuf_descriptor(expr.expr)
+            arg_name = expr.attrname
+        except AttributeError:
+            return  # only checking <...>.repeated_field.append()
+        try:
+            arg_type = to_pytype(desc.fields_by_name[arg_name])
+        except KeyError:
+            return  # warn?
+
+        def check_arg(val):
+            if not isinstance(val, arg_type):
+                self.add_message('protobuf-type-error', node=node,
+                                 args=(desc.name, arg_name, arg_type.__name__, val))
+        for val in vals:
+            check_arg(val)
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):

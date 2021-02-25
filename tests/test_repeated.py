@@ -65,7 +65,6 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented protobuf-type-error')
     def test_scalar_typeerror(self, repeated_scalar_mod):
         node = astroid.extract_node("""
             import {repeated}
@@ -75,9 +74,143 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         """.format(repeated=repeated_scalar_mod))
         message = pylint.testutils.Message(
             'protobuf-type-error',
-            node=node, args=('values', 'Repeated')
+            node=node, args=('Repeated', 'values', 'str', 123)
         )
         with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_scalar_append_bad_usage_no_error(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            msg.values.append(123, 456)
+        """.format(mod=repeated_scalar_mod))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_scalar_extend_warns_on_each(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            msg.values.extend([123, 456])
+        """.format(mod=repeated_scalar_mod))
+        m1 = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Repeated', 'values', 'str', 123)
+        )
+        m2 = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Repeated', 'values', 'str', 456)
+        )
+        with self.assertAddsMessages(m1, m2):
+            self.walk(node.root())
+
+    def test_scalar_extend_indirect_warns(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            vals = [123]
+            msg.values.extend(vals)
+        """.format(mod=repeated_scalar_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Repeated', 'values', 'str', 123)
+        )
+        with self.assertAddsMessages(msg):
+            self.walk(node.root())
+
+    def test_scalar_extend_bad_usage_no_error(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            msg.values.extend([123], [456])
+        """.format(mod=repeated_scalar_mod))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_list_extend_bad_usage_no_error(self):
+        node = astroid.extract_node("""
+            msg = []
+            msg.extend([123], [456])
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_nonscalar_append_bad_usage_no_error(self):
+        node = astroid.extract_node("""
+            class NonProtobuf(object):
+                values = []
+            msg = NonProtobuf()
+            msg.values.append(123, 456)
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_scalar_append_uninferable_no_error(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            msg.values.append(get_external())
+        """.format(mod=repeated_scalar_mod))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_scalar_extend_uninferable_no_error(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            msg.values.append([get_external()])
+        """.format(mod=repeated_scalar_mod))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_scalar_indirect_extend_uninferable_no_error(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            vals = [get_external()]
+            msg.values.append(vals)
+        """.format(mod=repeated_scalar_mod))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_nonscalar_append_uninferable_no_error(self):
+        node = astroid.extract_node("""
+            class NonProtobuf(object):
+                values = []
+            msg = NonProtobuf()
+            msg.values.append(get_external())
+        """)
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unimplemented, needs design review',
+                       raises=AssertionError, match='Expected messages did not match actual')
+    def test_indirect_access_no_error(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            v = msg.values
+            v.append(123)
+        """.format(mod=repeated_scalar_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Repeated', 'values', 'str', 123)
+        )
+        with self.assertAddsMessages(msg):
+            self.walk(node.root())
+
+    def test_not_a_repeated_field_no_typeerror(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {mod}
+            msg = {mod}.Repeated()
+            msg.other.append(123)
+        """.format(mod=repeated_scalar_mod))
+        msg = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.func.expr, args=('other', 'Repeated')
+        )
+        with self.assertAddsMessages(msg):
             self.walk(node.root())
 
     def test_missing_field_on_repeated_inner_warns(self, repeated_composite_mod):

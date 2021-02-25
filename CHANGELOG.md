@@ -8,6 +8,7 @@
 - Add warning for use of positional arguments on message constructors. This
   introduces a new warning message "protobuf-no-posargs"
 - Add support for type checking message constructor arguments
+- Add support for type checking repeated scalar fields
 
 ## [0.17.0] - 2021-02-18
 - Add support for scalar repeated fields
