@@ -255,7 +255,6 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented external types inference')
     def test_missing_field_on_repeated_warns(self, repeated_external_composite_mod):
         node = astroid.extract_node("""
         import {repeated}

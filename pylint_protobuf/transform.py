@@ -325,15 +325,7 @@ def _template_message(desc, descriptor_registry):
         'self.{} = self.{}()  # inner_nonrepeated_fields'.format(field_name, field_type)
         for field_name, field_type in desc.inner_nonrepeated_fields
     ]
-    initialisers += [
-        'self.{} = {}()  # external_fields'.format(field_name, field_type)
-        for field_name, field_type in desc.external_fields
-    ]
 
-    # FIXME: some of these double up with the repeated fields
-    # e.g.
-    #   self.values = Inner()
-    #   self.values = InnerCompositeContainer()
 
     repeated_scalar_fields = [fd.name for fd in desc.fields if is_repeated(fd) and not is_composite(fd)]
     initialisers += [
@@ -341,14 +333,29 @@ def _template_message(desc, descriptor_registry):
         for field_name in repeated_scalar_fields
     ]
 
+    rcfields = {
+        fd for fd in desc.fields
+        if is_repeated(fd) and is_composite(fd) and not is_map_field(fd)
+    }
     repeated_composite_fields = [
         (fd.name, fd.message_type.name, desc.is_nested(fd))
-        for fd in desc.fields
-        if is_repeated(fd) and is_composite(fd) and not is_map_field(fd)
+        for fd in rcfields
     ]
     initialisers += [
         _template_composite_field(desc.name, field_name, field_type, is_nested)
         for field_name, field_type, is_nested in repeated_composite_fields
+    ]
+
+    # TODO: refactor this
+    external_fields = [
+        (f.name, full_name(f.message_type)) for f in desc.message_fields
+        if not desc.is_nested(f)
+        if f not in rcfields  # don't want to double up above
+    ]
+    initialisers += [
+        'self.{} = {}()  # external_fields'.format(field_name, field_type)
+        for field_name, field_type in external_fields
+
     ]
 
     args = ['self'] + ['{}=None'.format(f) for f in slots]
