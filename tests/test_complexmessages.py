@@ -99,6 +99,19 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
+    def test_inner_class_no_assignment(self, innerclass_pb2):
+        node = astroid.extract_node("""
+        from {} import Person
+        p = Person()
+        p.primary_alias = Person.Alias(name="Example Fakename")
+        """.format(innerclass_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-no-assignment',
+            node=node.targets[0], args=('Person', 'primary_alias')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
     def test_inner_class_warns(self, innerclass_pb2):
         node = astroid.extract_node("""
         from {} import Person

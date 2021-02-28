@@ -1,4 +1,6 @@
 import pytest
+import astroid
+import pylint.testutils
 
 import pylint_protobuf
 
@@ -12,6 +14,34 @@ def person_pb2(proto_builder):
           optional string email = 3;
         }
     """)
+
+
+class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
+    CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
+
+    def test_inferred_assignattr_warns(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            p = Person()
+            code = 123
+            p.name = code
+        """.format(person_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node.targets[0], args=('Person', 'name', 'str', 123)
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_uninferable_assignattr_no_warn(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            p = Person()
+            p.name = get_user_name()
+        """.format(person_pb2))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
 
 @pytest.fixture
 def typeerror_mod(person_pb2, module_builder):

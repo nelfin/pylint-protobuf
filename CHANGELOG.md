@@ -9,6 +9,8 @@
   introduces a new warning message "protobuf-no-posargs"
 - Add support for type checking message constructor arguments
 - Add support for type checking repeated scalar fields
+- Add support for checking assignment to read-only fields. This introduces a
+  new warning message "protobuf-no-assignment"
 
 ## [0.17.0] - 2021-02-18
 - Add support for scalar repeated fields

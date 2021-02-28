@@ -50,7 +50,6 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented protobuf-no-assignment')
     def test_repeated_attrassign(self, repeated_scalar_mod):
         node = astroid.extract_node("""
             import {repeated}
@@ -60,7 +59,35 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         """.format(repeated=repeated_scalar_mod))
         message = pylint.testutils.Message(
             'protobuf-no-assignment',
-            node=node.targets[0], args=('values', 'Repeated')
+            node=node.targets[0], args=('Repeated', 'values')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_repeated_attrassign_no_typeerror(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {repeated}
+
+            msg = {repeated}.Repeated()
+            msg.values = [123, 456]
+        """.format(repeated=repeated_scalar_mod))
+        message = pylint.testutils.Message(
+            'protobuf-no-assignment',
+            node=node.targets[0], args=('Repeated', 'values')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_repeated_scalar_assign_no_typeerror(self, repeated_scalar_mod):
+        node = astroid.extract_node("""
+            import {repeated}
+
+            msg = {repeated}.Repeated()
+            msg.values = 123
+        """.format(repeated=repeated_scalar_mod))
+        message = pylint.testutils.Message(
+            'protobuf-no-assignment',
+            node=node.targets[0], args=('Repeated', 'values')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())

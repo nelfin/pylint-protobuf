@@ -4,7 +4,7 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
-from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite
+from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite, is_repeated
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
 _MISSING_IMPORT_IS_ERROR = False
@@ -36,6 +36,12 @@ MESSAGES = {
         'protobuf-no-posargs',
         'Used when a message class is initialised with positional '
         'arguments instead of keyword arguments'
+    ),
+    'E%02d05' % BASE_ID: (
+        'Field "%s.%s" does not support assignment',
+        'protobuf-no-assignment',
+        'Used when a value is written to a read-only field such as a '
+        'composite or repeated field'
     ),
 }
 WELLKNOWNTYPE_MODULES = [
@@ -292,6 +298,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             self._disable('assigning-non-slot', node.lineno)
         else:
             self._check_type_error(node, desc)
+            self._check_no_assign(node, desc)
 
     @utils.check_messages('protobuf-type-error')
     def _check_type_error(self, node, desc):
@@ -299,12 +306,11 @@ class ProtobufDescriptorChecker(BaseChecker):
         if not isinstance(node, astroid.AssignAttr):
             return
         attr = node.attrname
-        value_node = node.parent.value  # type: Node
-        fd = desc.fields_by_name[attr]
+        value_node = node.assign_type().value  # type: Node
+        fd = desc.fields_by_name[attr]  # this should always pass given the check in _assignattr
+        if is_composite(fd) or is_repeated(fd):
+            return  # skip this check and resolve in _check_no_assign
         type_ = to_pytype(fd)
-        if type_.__name__ == 'TODO':
-            # XXX: composite field
-            return
         for val_const in _get_inferred_values(value_node):
             if not hasattr(val_const, 'value'):
                 continue
@@ -312,6 +318,16 @@ class ProtobufDescriptorChecker(BaseChecker):
             if not isinstance(val, type_):
                 self.add_message('protobuf-type-error', node=node, args=(desc.name, attr, type_.__name__, val))
                 break
+
+    @utils.check_messages('protobuf-no-assignment')
+    def _check_no_assign(self, node, desc):
+        # type: (Node, SimpleDescriptor) -> None
+        if not isinstance(node, astroid.AssignAttr):
+            return
+        attr = node.attrname
+        fd = desc.fields_by_name[attr]
+        if is_composite(fd) or is_repeated(fd):
+            self.add_message('protobuf-no-assignment', node=node, args=(desc.name, attr))
 
     def _check_module(self, mod, node):
         # type: (astroid.Module, astroid.Attribute) -> None
