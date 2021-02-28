@@ -1,7 +1,7 @@
 import os.path
 from setuptools import setup, find_packages
 
-__version__ = '0.17.0'
+__version__ = '0.18.0'
 
 description = (
     'A plugin for making Pylint aware of the fields of protobuf-generated '
@@ -23,7 +23,7 @@ setup(
     license='MIT',
     keywords=['pylint', 'plugin', 'protobuf'],
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3',
         'Environment :: Console',
         'License :: OSI Approved :: MIT License',

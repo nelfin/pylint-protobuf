@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.18.0] - Unreleased
+## [0.18.0] - 2021-02-28
 - Add support for checking invalid enum values and names. This introduces a new
   warning message "protobuf-enum-value"
 - Add support for type checking scalar fields. This introduces a new warning
