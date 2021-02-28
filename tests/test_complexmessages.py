@@ -103,7 +103,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         node = astroid.extract_node("""
         from {} import Outer
         outer = Outer()
-        outer.inner.value = 123  #@
+        outer.inner.value = 'a_string'
         """.format(complexfield_pb2))
         with self.assertNoMessages():
             self.walk(node.root())
