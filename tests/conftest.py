@@ -20,11 +20,15 @@ def error_on_missing_modules():
     pylint_protobuf._MISSING_IMPORT_IS_ERROR = oldval
 
 
+def _safe_name(request):
+    return request.node.name.translate({ord(c): ord('_') for c in '/.:'})
+
+
 @pytest.fixture
 def proto_builder(tmpdir, monkeypatch, request):
     def proto(source, name=None, preamble=None, package=None):
         if name is None:
-            name = request.node.name
+            name = _safe_name(request)
         if preamble is None:
             preamble = 'syntax = "proto2";\npackage {};\n'.format(name)
         if package is None:
