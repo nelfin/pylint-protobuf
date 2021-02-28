@@ -11,6 +11,8 @@
 - Add support for type checking repeated scalar fields
 - Add support for checking assignment to read-only fields. This introduces a
   new warning message "protobuf-no-assignment"
+- Fix missing warnings for non-nested composite types and external nested
+  (e.g. External.Inner) composite types
 
 ## [0.17.0] - 2021-02-18
 - Add support for scalar repeated fields

@@ -48,11 +48,6 @@ Add or update `pylintrc` to load `pylint-protobuf`:
 
         import "external.proto";
 
-* Warnings on undefined attributes on non-nested composite types, e.g.
-
-        msg.inner.should_warn = 123
-  Due to the way that types are checked, these are not currently correctly
-  inferred and so will not raise any warnings.
 
 ## Alternatives
 
