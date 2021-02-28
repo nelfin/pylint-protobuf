@@ -54,10 +54,37 @@ def mutual_pb2(proto_builder):
     }
     """)
 
+@pytest.fixture
+def double_pb2(proto_builder):
+    return proto_builder("""
+        message Outer {
+          message Inner {
+            message Innermost {
+              required string value = 1;
+            }
+          }
+          required Inner.Innermost double_nested = 2;
+        }
+    """)
+
+@pytest.fixture
+def no_package_pb2(proto_builder):
+    preamble = 'syntax = "proto2";'  # deliberately no package
+    return proto_builder("""
+        message GloballyUniqueExternMessage {
+          message Inner {
+            required string value = 1;
+          }
+        }
+
+        message GloballyUniqueUsingExternMessage {
+          required GloballyUniqueExternMessage.Inner inner = 1;
+        }
+    """, preamble=preamble)
+
 class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
-    @pytest.mark.xfail(reason='externally defined types are Uninferable')
     def test_complex_field(self, complexfield_pb2):
         node = astroid.extract_node("""
         from {} import Outer
@@ -126,7 +153,6 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented external types inference')
     def test_mutually_recursive_warns(self, mutual_pb2):
         node = astroid.extract_node("""
         from {} import A
@@ -136,12 +162,11 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0],
-            args=('should_warn', 'fixture.mutual_pb2.A.b_mutual.a_mutual')
+            args=('should_warn', 'A')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='externally defined types are Uninferable')
     def test_external_nested_class_warns(self, extern_pb2):
         node = astroid.extract_node("""
         from {} import UserFavourite
@@ -151,7 +176,37 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         message = pylint.testutils.Message(
             'protobuf-undefined-attribute',
             node=node.targets[0],
-            args=('should_warn', 'favourite')
+            args=('should_warn', 'Identifier')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_double_nested_class_warns(self, double_pb2):
+        node = astroid.extract_node("""
+        from {} import Outer
+        o = Outer()
+        o.double_nested.value = 'a_string'
+        o.double_nested.should_warn = 'a_string'
+        """.format(double_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0],
+            args=('should_warn', 'Innermost')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_no_toplevel_package_no_error(self, no_package_pb2):
+        node = astroid.extract_node("""
+        from {} import GloballyUniqueUsingExternMessage
+        o = GloballyUniqueUsingExternMessage()
+        o.inner.value = 'a_string'
+        o.inner.should_warn = 'a_string'
+        """.format(no_package_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-undefined-attribute',
+            node=node.targets[0],
+            args=('should_warn', 'Inner')
         )
         with self.assertAddsMessages(message):
             self.walk(node.root())

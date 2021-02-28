@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, List, Tuple, Set, Dict, Union, MutableMapping
+from typing import Any, List, Tuple, Set, Dict, Union, MutableMapping, Iterator
 import textwrap
 
 import astroid
@@ -105,6 +105,16 @@ def to_pytype(fd):
     if is_composite(fd):
         return type(fd.message_type.name, (TODO,), {})  # XXX: such a hack!
     return FIELD_TYPES[fd.type]
+
+def field_type_path(fd):
+    # type: (FieldDescriptor) -> Iterator[str]
+    if fd.containing_type is not None:
+        yield from field_type_path(fd.containing_type)
+    yield fd.name
+
+def full_name(fd):
+    # type: (FieldDescriptor) -> str
+    return '.'.join(field_type_path(fd))
 
 
 class SimpleDescriptor(object):
@@ -220,7 +230,7 @@ class SimpleDescriptor(object):
     def external_fields(self):
         # type: () -> List[Tuple[str, str]]
         return [
-            (f.name, f.message_type.name) for f in self.message_fields
+            (f.name, full_name(f.message_type)) for f in self.message_fields
             if not self.is_nested(f)
         ]
 
@@ -443,6 +453,7 @@ def transform_module(mod):
         cls = mod_node_to_class(mod, name)
         try:
             for local_name, node in transform_descriptor_to_class(cls):
+                node.parent = mod
                 mod.locals[local_name] = [node]
         except NotImplementedError:
             pass
