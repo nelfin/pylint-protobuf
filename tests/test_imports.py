@@ -33,12 +33,15 @@ class TestImportedProtoDefinitions(CheckerTestCase):
 
     @pytest.mark.xfail(reason='external message definitions (Child) are Uninferable')
     def test_issue10_imported_message_warns(self, parent_mod):
+        # NOTE: this works if we hardcode the lookup for the initialiser as
+        # self.child = child__pb2.Child(), just need to determine a way to
+        # programmatically determine this
         node = extract_node("""
         from {} import Parent
         p = Parent()
         p.child.should_warn = 123  #@
         """.format(parent_mod))
-        msg = make_message(node, 'Child', 'should_warn')
+        msg = make_message(node.targets[0], 'Child', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue18_renamed_from_import_no_assertion_error(self, parent_mod):
