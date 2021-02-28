@@ -4,30 +4,37 @@ pylint-protobuf
 `pylint-protobuf` is a Pylint plugin for making Pylint aware of generated
 fields from Protobuf types.
 
-## Usage
+## Install
+
+Install from PyPI via:
+
+    pip install pylint-protobuf
+
+Add or update `pylintrc` to load `pylint-protobuf`:
+
+    [MASTER]
+    load-plugins=pylint_protobuf
+
+## Example
 
     $ cat <<EOF >person.proto
     message Person {
       required string name = 1;
-      required int32 id = 2;
-      optional string email = 3;
     }
     EOF
-    $ cat <<EOF >example.py
-    from person_pb2 import Person
-    a = Person()
-    a.invalid_field = 123
-    EOF
     $ protoc person.proto --python_out=.
+    $ cat <<EOF >readme.py
+    from person_pb2 import Person
+    p = Person('all arguments must be kwargs')
+    p.invalid_field = 'value'
+    p.name = 123
+    EOF
     $ pip install pylint-protobuf
-    $ pylint --load-plugins=pylint_protobuf example.py
-    ************* Module example
-    E:  4, 0: Field 'invalid_field' does not appear in the declared fields of
-    protobuf-generated class 'Person' and will raise AttributeError on access
-    (protobuf-undefined-attribute)
-
-    ------------------------------------
-    Your code has been rated at -6.67/10
+    $ pylint --load-plugins=pylint_protobuf readme.py
+    ************* Module readme
+    readme.py:2:4: E5904: Positional arguments are not allowed in message constructors and will raise TypeError (protobuf-no-posargs)
+    readme.py:3:0: E5901: Field 'invalid_field' does not appear in the declared fields of protobuf-generated class 'Person' and will raise AttributeError on access (protobuf-undefined-attribute)
+    readme.py:4:0: E5903: Field "Person.name" is of type 'str' and value 123 will raise TypeError at runtime (protobuf-type-error)
 
 ## Supported Python Versions
 
@@ -41,13 +48,19 @@ fields from Protobuf types.
 
         import "external.proto";
 
-* Warnings of attribute assignment to composite field, e.g.
-
-        msg.inner = msg.Inner(value=123)  # would raise AttributeError
-
 * Warnings on undefined attributes on non-nested composite types, e.g.
 
         msg.inner.should_warn = 123
   Due to the way that types are checked, these are not currently correctly
   inferred and so will not raise any warnings.
 
+## Alternatives
+
+### mypy-protobuf
+
+A `protoc` compiler plugin for generating `.pyi` stubs from `.proto` files.
+Fully-featured and well supported, a useful extension to a `mypy` workflow.
+May be better suited to your usecase if you control the entire pipeline. May
+_not_ be suited if you are a downstream consumer of generated `_pb2.py` modules
+with no access to the original `.proto` definitions, in which case
+`pylint-protobuf` may be better suited for your use.
