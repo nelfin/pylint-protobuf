@@ -1,5 +1,10 @@
 # pylint-protobuf
 
+## [0.18.1] - 2021-03-02
+
+- Fix missing .append() (and other) methods on repeated composite containers
+  causing false positive warnings
+
 ## [0.18.0] - 2021-02-28
 - Add support for checking invalid enum values and names. This introduces a new
   warning message "protobuf-enum-value"
