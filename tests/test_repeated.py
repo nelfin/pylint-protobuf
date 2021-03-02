@@ -270,6 +270,19 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(message):
             self.walk(node.root())
 
+    def test_repeated_composite_supports_append(self, repeated_composite_mod):
+        node = astroid.extract_node("""
+        import {repeated}
+
+        outer = {repeated}.Outer()
+        inner = {repeated}.Outer.Inner()
+        inner.value = 'a string'
+        outer.values.append(inner)
+        """.format(repeated=repeated_composite_mod))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+
 @pytest.fixture
 def scalar_warnings_mod(repeated_scalar_mod, module_builder):
     return module_builder("""

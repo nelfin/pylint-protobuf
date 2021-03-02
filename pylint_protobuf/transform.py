@@ -302,7 +302,7 @@ def _template_composite_field(parent_name, name, field_type, is_nested=False):
     # is not nested
     qualifier = parent_name+'.' if is_nested else ''
     return textwrap.dedent("""
-    class {field_type}CompositeContainer(object):
+    class {field_type}CompositeContainer(list):
         def add(self, **kwargs):
             return {qualifier}{field_type}()
     self.{name} = {field_type}CompositeContainer()  # repeated composite_fields
