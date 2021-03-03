@@ -246,6 +246,8 @@ class ProtobufDescriptorChecker(BaseChecker):
             arg_name = expr.attrname
         except AttributeError:
             return  # only checking <...>.repeated_field.append()
+        if desc is None:
+            return
         try:
             arg_type = to_pytype(desc.fields_by_name[arg_name])
         except KeyError:

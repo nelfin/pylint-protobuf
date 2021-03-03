@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## [0.18.3] - 2021-03-04
+- Fix AttributeError raised in `_check_repeated_scalar`
+
 ## [0.18.2] - 2021-03-04
 - Fix AttributeError raised in `_check_init_kwargs` method (#38). Thanks
   @mcharlou for the report
