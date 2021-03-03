@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## [0.18.2] - 2021-03-04
+- Fix AttributeError raised in `_check_init_kwargs` method
+
 ## [0.18.1] - 2021-03-02
 
 - Fix missing .append() (and other) methods on repeated composite containers

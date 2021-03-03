@@ -164,6 +164,8 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _check_init_kwargs(self, node):
         # type: (astroid.Call) -> None
         desc = _get_protobuf_descriptor(node.func)
+        if desc is None:
+            return
         keywords = node.keywords or []
         for kw in keywords:
             arg_name, val_node = kw.arg, kw.value
