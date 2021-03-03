@@ -1,7 +1,8 @@
 # pylint-protobuf
 
 ## [0.18.2] - 2021-03-04
-- Fix AttributeError raised in `_check_init_kwargs` method
+- Fix AttributeError raised in `_check_init_kwargs` method (#38). Thanks
+  @mcharlou for the report
 
 ## [0.18.1] - 2021-03-02
 
