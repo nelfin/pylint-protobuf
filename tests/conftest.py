@@ -13,9 +13,9 @@ import pylint_protobuf
 
 
 @pytest.fixture(autouse=True)
-def error_on_missing_modules():
+def error_on_missing_modules(request):
     oldval = pylint_protobuf._MISSING_IMPORT_IS_ERROR
-    pylint_protobuf._MISSING_IMPORT_IS_ERROR = True
+    pylint_protobuf._MISSING_IMPORT_IS_ERROR = 'no_missing_modules_check' not in request.keywords
     yield
     pylint_protobuf._MISSING_IMPORT_IS_ERROR = oldval
 
