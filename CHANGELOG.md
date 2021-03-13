@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [0.18.4] - 2021-03-14
+- Fix IndexError raised in `_check_repeated_scalar` (#39). Thanks @zoedberg for
+  the report
+
 ## [0.18.3] - 2021-03-04
 - Fix AttributeError raised in `_check_repeated_scalar`
 
