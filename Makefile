@@ -10,7 +10,7 @@ coverage:
 	coverage html
 
 clean:
-	-rm -r dist/
+	-rm -r dist/ build/ *.egg-info/
 
 upload: clean dist
 	twine check dist/*
