@@ -233,7 +233,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             vals = []
             for elem in arg.elts:
                 c = _get_inferred_values(elem)
-                if c is None:
+                if not c:
                     continue
                 c = c[0]
                 if not hasattr(c, 'value'):
