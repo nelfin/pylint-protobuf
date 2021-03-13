@@ -186,7 +186,7 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         node = astroid.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
-            msg.values.append([get_external()])
+            msg.values.extend([get_external()])
         """.format(mod=repeated_scalar_mod))
         with self.assertNoMessages():
             self.walk(node.root())
@@ -196,7 +196,7 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
             import {mod}
             msg = {mod}.Repeated()
             vals = [get_external()]
-            msg.values.append(vals)
+            msg.values.extend(vals)
         """.format(mod=repeated_scalar_mod))
         with self.assertNoMessages():
             self.walk(node.root())
