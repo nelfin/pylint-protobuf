@@ -1,4 +1,4 @@
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Any
 
 import astroid
 from pylint.checkers import BaseChecker, utils
@@ -95,6 +95,21 @@ def _get_protobuf_descriptor(node):
     return cls_def._protobuf_descriptor  # type: SimpleDescriptor
 
 
+def _scalar_typecheck(val, val_type):
+    # type: (type, Any) -> bool
+    # NOTE: transform.to_pytype returns {bool, int, float, str, <other>}
+    if val_type is float:
+        return isinstance(val, (float, int, bool))
+    elif val_type is int:
+        return isinstance(val, (int, bool))
+    elif val_type is bool:
+        return isinstance(val, (int, bool))
+    elif val_type is str:
+        return isinstance(val, str)
+    else:
+        return True  # Are there any other scalar protobuf types?
+
+
 class ProtobufDescriptorChecker(BaseChecker):
     __implements__ = IAstroidChecker
     msgs = MESSAGES
@@ -177,8 +192,10 @@ class ProtobufDescriptorChecker(BaseChecker):
                 # messages
                 for val in _get_inferred_values(val_node):
                     if isinstance(val, astroid.Const):
-                        self.add_message('protobuf-type-error', node=node,
-                                         args=(desc.name, arg_name, arg_type.__name__, val.value))
+                        if val.value is not None:
+                            # Special-case None as default of keyword args
+                            self.add_message('protobuf-type-error', node=node,
+                                             args=(desc.name, arg_name, arg_type.__name__, val.value))
                         break
                     val_desc = _get_protobuf_descriptor(val)
                     if val_desc is None:
@@ -198,9 +215,11 @@ class ProtobufDescriptorChecker(BaseChecker):
                                          args=(desc.name, arg_name, arg_type.__name__, val))
                         break
                     val = val_const.value
-                    if not isinstance(val, arg_type):
-                        self.add_message('protobuf-type-error', node=node,
-                                         args=(desc.name, arg_name, arg_type.__name__, val))
+                    if not _scalar_typecheck(val, arg_type):
+                        if val is not None:
+                            # Special-case None as default of keyword args
+                            self.add_message('protobuf-type-error', node=node,
+                                             args=(desc.name, arg_name, arg_type.__name__, val))
                         break
 
     @utils.check_messages('protobuf-type-error')
@@ -254,7 +273,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             return  # warn?
 
         def check_arg(val):
-            if not isinstance(val, arg_type):
+            if not _scalar_typecheck(val, arg_type):
                 self.add_message('protobuf-type-error', node=node,
                                  args=(desc.name, arg_name, arg_type.__name__, val))
         for val in vals:
@@ -319,7 +338,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             if not hasattr(val_const, 'value'):
                 continue
             val = val_const.value
-            if not isinstance(val, type_):
+            if not _scalar_typecheck(val, type_):
                 self.add_message('protobuf-type-error', node=node, args=(desc.name, attr, type_.__name__, val))
                 break
 

@@ -1,5 +1,11 @@
 # pylint-protobuf
 
+## [Unreleased]
+- Fix false positive protobuf-type-error on numeric scalar fields supporting
+  type elevation, e.g. int to float (#41)
+- Fix false positive protobuf-type-error on keyword arguments supplied with
+  default None values (#42)
+
 ## [0.18.4] - 2021-03-14
 - Fix IndexError raised in `_check_repeated_scalar` (#39). Thanks @zoedberg for
   the report

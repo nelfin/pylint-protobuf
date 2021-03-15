@@ -12,6 +12,8 @@ def person_pb2(proto_builder):
           required string name = 1;
           required int32 code = 2;
           optional string email = 3;
+          required float fraction = 4;
+          required bool toggle = 5;
         }
     """)
 
@@ -40,6 +42,96 @@ class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
             p.name = get_user_name()
         """.format(person_pb2))
         with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_issue40_type_constructor_warns(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(code=int)
+        """.format(person_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Person', 'code', 'int', 'int()')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_issue40_float_constructor_warns(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(fraction=float)
+        """.format(person_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Person', 'fraction', 'float', 'float()')
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_issue40_int_constructor_no_warn(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(code=int('1'))
+        """.format(person_pb2))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_issue40_int_from_float_warns(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(code=123.0)
+        """.format(person_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node, args=('Person', 'code', 'int', 123.0)
+        )
+        with self.assertAddsMessages(message):
+            self.walk(node.root())
+
+    def test_issue41_float_from_float_no_warn(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(fraction=123.0)
+        """.format(person_pb2))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_issue41_float_from_int_no_warn(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(fraction=123)
+        """.format(person_pb2))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_issue41_float_from_int_constructor_no_warn(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            p = Person(fraction=int('123'))
+        """.format(person_pb2))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_issue42_kwargs_none_should_not_warn(self, person_pb2):
+        # It's silly, but true
+        node = astroid.extract_node("""
+            from {} import Person
+            Person(code=None)
+        """.format(person_pb2))
+        with self.assertNoMessages():
+            self.walk(node.root())
+
+    def test_issue42_assignattr_none_should_warn(self, person_pb2):
+        node = astroid.extract_node("""
+            from {} import Person
+            p = Person()
+            p.code = None
+        """.format(person_pb2))
+        message = pylint.testutils.Message(
+            'protobuf-type-error',
+            node=node.targets[0], args=('Person', 'code', 'int', None)
+        )
+        with self.assertAddsMessages(message):
             self.walk(node.root())
 
 
@@ -172,7 +264,6 @@ def scalar_bad_kwarg_mod(composite_pb2, module_builder):
     """.format(mod=composite_pb2), 'composite_bad_kwarg_mod')
 
 
-#@pytest.mark.xfail(reason='unimplemented check of composite ')
 def test_warnings_of_composite_on_scalar_kwarg(scalar_bad_kwarg_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
