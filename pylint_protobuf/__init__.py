@@ -103,7 +103,7 @@ def _scalar_typecheck(val, val_type):
     elif val_type is int:
         return isinstance(val, (int, bool))
     elif val_type is bool:
-        return isinstance(val, (int, bool))
+        return isinstance(val, (float, int, bool))
     elif val_type is str:
         return isinstance(val, str)
     else:
