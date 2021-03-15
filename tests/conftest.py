@@ -21,7 +21,7 @@ def error_on_missing_modules(request):
 
 
 def _safe_name(request):
-    return request.node.name.translate({ord(c): ord('_') for c in '/.:'})
+    return request.node.name.translate({ord(c): ord('_') for c in '/.:[]-'})
 
 
 @pytest.fixture
