@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [Unreleased]
+## [0.18.5] - 2021-03-17
 - Fix false positive protobuf-type-error on numeric scalar fields supporting
   type elevation, e.g. int to float (#41)
 - Fix false positive protobuf-type-error on keyword arguments supplied with
