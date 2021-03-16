@@ -1,3 +1,4 @@
+import builtins
 from typing import Union, Optional, List, Any
 
 import astroid
@@ -96,18 +97,31 @@ def _get_protobuf_descriptor(node):
 
 
 def _scalar_typecheck(val, val_type):
-    # type: (type, Any) -> bool
+    # type: (Union[type, Any], type) -> bool
     # NOTE: transform.to_pytype returns {bool, int, float, str, <other>}
+    if type(val) is type:
+        check = issubclass
+    else:
+        check = isinstance
     if val_type is float:
-        return isinstance(val, (float, int, bool))
+        return check(val, (float, int, bool))
     elif val_type is int:
-        return isinstance(val, (int, bool))
+        return check(val, (int, bool))
     elif val_type is bool:
-        return isinstance(val, (float, int, bool))
+        return check(val, (float, int, bool))
     elif val_type is str:
-        return isinstance(val, str)
+        return check(val, str)
     else:
         return True  # Are there any other scalar protobuf types?
+
+
+def _resolve_builtin(inst):
+    # type: (astroid.Instance) -> Optional[type]
+    typename = inst.pytype()
+    if not typename.startswith('builtins.'):
+        return None
+    typename = typename[len('builtins.'):]
+    return getattr(builtins, typename, None)  # eh...
 
 
 class ProtobufDescriptorChecker(BaseChecker):
@@ -206,7 +220,20 @@ class ProtobufDescriptorChecker(BaseChecker):
                                          args=(desc.name, arg_name, arg_type.__name__, val))
             else:
                 for val_const in _get_inferred_values(val_node):
-                    if not hasattr(val_const, 'value'):
+                    if hasattr(val_const, 'value'):
+                        val = val_const.value
+                    elif hasattr(val_const, '_proxied'):
+                        # check for <Instance of builtins.int> etc.
+                        val = _resolve_builtin(val_const)
+                        if val is None:  # check for composite assigned to scalar
+                            try:
+                                val = '{}()'.format(val_const.name)
+                            except AttributeError:
+                                continue
+                            self.add_message('protobuf-type-error', node=node,
+                                             args=(desc.name, arg_name, arg_type.__name__, val))
+                            break
+                    else:
                         try:
                             val = '{}()'.format(val_const.name)
                         except AttributeError:
@@ -214,7 +241,6 @@ class ProtobufDescriptorChecker(BaseChecker):
                         self.add_message('protobuf-type-error', node=node,
                                          args=(desc.name, arg_name, arg_type.__name__, val))
                         break
-                    val = val_const.value
                     if not _scalar_typecheck(val, arg_type):
                         if val is not None:
                             # Special-case None as default of keyword args

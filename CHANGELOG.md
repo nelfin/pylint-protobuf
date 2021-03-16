@@ -5,6 +5,8 @@
   type elevation, e.g. int to float (#41)
 - Fix false positive protobuf-type-error on keyword arguments supplied with
   default None values (#42)
+- Fix false positive protobuf-type-error on partially inferred values assigned
+  to scalar fields (#40). Thanks @zoedberg for the report
 
 ## [0.18.4] - 2021-03-14
 - Fix IndexError raised in `_check_repeated_scalar` (#39). Thanks @zoedberg for
