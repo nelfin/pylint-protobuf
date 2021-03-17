@@ -277,17 +277,13 @@ def test_warnings_of_composite_on_scalar_kwarg(scalar_bad_kwarg_mod, linter_fact
     assert sorted(actual_messages) == sorted(expected_messages)
 
 
-@pytest.fixture
-def parsing_mod(person_pb2, module_builder):
-    return module_builder("""
+def test_issue40_no_warnings(person_pb2, module_builder, linter_factory):
+    parsing_mod = module_builder("""
         from {mod} import Person
         var_to_split = 'abcdfeg:1234'
         _, var = var_to_split.split(':')
         Person(code=int(var))
     """.format(mod=person_pb2), 'parsing_mod')
-
-
-def test_issue40_no_warnings(parsing_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
         disable=['all'], enable=['protobuf-undefined-attribute', 'protobuf-type-error'],
@@ -295,3 +291,24 @@ def test_issue40_no_warnings(parsing_mod, linter_factory):
     linter.check([parsing_mod])
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert not actual_messages
+
+
+@pytest.mark.xfail(reason='messages should be re-worded', raises=AssertionError)
+def test_issue40_with_warnings(person_pb2, module_builder, linter_factory):
+    parsing_mod = module_builder("""
+        from {mod} import Person
+        var_to_split = 'abcdfeg:1234'
+        _, var = var_to_split.split(':')
+        Person(code=float(var))
+    """.format(mod=person_pb2), 'parsing_mod')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'protobuf-type-error'],
+    )
+    linter.check([parsing_mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    expected_messages = [
+        # pylint_protobuf.MESSAGES['E5903'][0] % ('Person', 'code', 'int', float),          # Current
+        pylint_protobuf.MESSAGES['E5903'][0] % ('Person', 'code', 'int', 'of type float'),  # Preferred
+    ]
+    assert sorted(actual_messages) == sorted(expected_messages)
