@@ -3,6 +3,7 @@ import textwrap
 import pytest
 import astroid
 import pylint.testutils
+from conftest import make_message
 
 import pylint_protobuf
 
@@ -82,6 +83,18 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
             """.format(module=module, wkt=wkt, field=field))
             with self.assertNoMessages():
                 self.walk(node.root())
+
+    @pytest.mark.xfail(reason='not actually checking fields on well-known types')
+    @pytest.mark.parametrize("module,wkt,_", SAMPLE_WKTS)
+    def test_wkt_should_still_warn(self, module, wkt, _, error_on_missing_modules):
+        node = astroid.extract_node("""
+            from google.protobuf.{module} import {wkt}
+            t = {wkt}()
+            t.should_warn = 123
+        """.format(module=module, wkt=wkt))
+        msg = make_message(node.targets[0], wkt, 'should_warn')
+        with self.assertAddsMessages(msg):
+            self.walk(node.root())
 
 
 @pytest.fixture
