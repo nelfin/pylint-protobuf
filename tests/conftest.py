@@ -90,6 +90,18 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(*msg):
             self.walk(node.root())
 
+    def extract_node(self, s):
+        return astroid.extract_node(s)
+
+    def _make_message(self, msg_id, node, args):
+        return pylint.testutils.Message(msg_id, node=node, args=args)
+
+    undefined_attribute_msg = lambda self, node, *args: self._make_message('protobuf-undefined-attribute', node, args)
+    enum_value_msg = lambda self, node, *args: self._make_message('protobuf-enum-value', node, args)
+    type_error_msg = lambda self, node, *args: self._make_message('protobuf-type-error', node, args)
+    no_posargs_msg = lambda self, node, *args: self._make_message('protobuf-no-posargs', node, args)
+    no_assignment_msg = lambda self, node, *args: self._make_message('protobuf-no-assignment', node, args)
+
 
 @pytest.fixture
 def linter_factory():
