@@ -40,15 +40,6 @@ Add or update `pylintrc` to load `pylint-protobuf`:
 
 `pylint-protobuf` supports Python 3.5 at a minimum.
 
-## Known Issues
-
-`pylint-protobuf` does not currently support the following concepts:
-
-* Externally defined messages, e.g.
-
-        import "external.proto";
-
-
 ## Alternatives
 
 ### mypy-protobuf

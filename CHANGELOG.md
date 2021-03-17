@@ -1,5 +1,8 @@
 # pylint-protobuf
 
+## [0.19.0] - Unreleased
+- Add support for imported message definitions via 'import "foo.proto";'
+
 ## [0.18.5] - 2021-03-17
 - Fix false positive protobuf-type-error on numeric scalar fields supporting
   type elevation, e.g. int to float (#41)

@@ -309,11 +309,23 @@ def _template_composite_field(parent_name, name, field_type, is_nested=False):
     """.format(name=name, field_type=field_type, qualifier=qualifier))
 
 
+def _to_module_name(fn):
+    # type: (str) -> str
+    """
+    Try to guess imported name from file descriptor path
+    """
+    fn = fn.replace('/', '_dot_')
+    fn = fn[:-len('.proto')]  # strip suffix
+    fn += '__pb2'  # XXX: might only be one underscore?
+    return fn
+
+
 def _template_message(desc, descriptor_registry):
     # type: (Descriptor, DescriptorRegistry) -> str
     """
     Returns cls_def string, list of fields, list of repeated fields
     """
+    this_file = desc.file
     desc = SimpleDescriptor(desc)
     descriptor_registry[desc.identifier] = desc
 
@@ -348,14 +360,27 @@ def _template_message(desc, descriptor_registry):
 
     # TODO: refactor this
     external_fields = [
-        (f.name, full_name(f.message_type)) for f in desc.message_fields
+        (f, f.message_type) for f in desc.message_fields
         if not desc.is_nested(f)
         if f not in rcfields  # don't want to double up above
     ]
+    siblings = [
+        (f, f.name, full_name(msg_type))
+        for f, msg_type in external_fields
+        if msg_type.file is this_file
+    ]
     initialisers += [
-        'self.{} = {}()  # external_fields'.format(field_name, field_type)
-        for field_name, field_type in external_fields
-
+        'self.{} = {}()  # external_fields (siblings)'.format(field_name, field_type)
+        for _, field_name, field_type in siblings
+    ]
+    externals = [
+        (f, f.name, _to_module_name(msg_type.file.name), full_name(msg_type))  # TODO: look up name instead of heuristic?
+        for f, msg_type in external_fields
+        if msg_type.file is not this_file
+    ]
+    initialisers += [
+        'self.{} = {}.{}()  # external_fields (imports)'.format(field_name, qualifier, field_type)
+        for _, field_name, qualifier, field_type in externals
     ]
 
     args = ['self'] + ['{}=None'.format(f) for f in slots]
@@ -452,6 +477,20 @@ def mod_node_to_class(mod, name):
     # type: (astroid.Module, str) -> Any
     ns = _exec_module(mod)
     return ns[name]
+
+
+def resolve_imports(mod):
+    # type: (astroid.Module) -> List[str]
+    """
+    UNUSED: proposed to look up imported names rather than guess (see external fields clauses)
+    """
+    import_names = []
+    for node in mod.nodes_of_class((astroid.Import, astroid.ImportFrom)):
+        for original, alias in node.names:
+            name = alias or original
+            if name.endswith('_pb2'):
+                import_names.append(name)
+    return import_names
 
 
 def transform_module(mod):

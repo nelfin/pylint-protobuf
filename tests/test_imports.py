@@ -22,6 +22,20 @@ def parent_mod(proto_builder, child_mod):
     """, 'parent')
 
 
+@pytest.fixture
+def wkt_mod(proto_builder):
+    return proto_builder("""
+        import "google/protobuf/timestamp.proto";
+        message Sibling {
+            required string value = 1;
+        }
+        message UsesTimestamp {
+            required google.protobuf.Timestamp ts = 1;
+            required Sibling a_composite = 2;
+        }
+    """)
+
+
 class TestImportedProtoDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
@@ -31,11 +45,7 @@ class TestImportedProtoDefinitions(CheckerTestCase):
         """.format(parent_mod))
         self.assert_no_messages(node)
 
-    @pytest.mark.xfail(reason='external message definitions (Child) are Uninferable')
     def test_issue10_imported_message_warns(self, parent_mod):
-        # NOTE: this works if we hardcode the lookup for the initialiser as
-        # self.child = child__pb2.Child(), just need to determine a way to
-        # programmatically determine this
         node = extract_node("""
         from {} import Parent
         p = Parent()
@@ -53,3 +63,11 @@ class TestImportedProtoDefinitions(CheckerTestCase):
         """.format(parent_mod))
         msg = make_message(node.targets[0], 'Parent', 'should_warn')
         self.assert_adds_messages(node, msg)
+
+    def test_imports_of_wellknown_types(self, wkt_mod):
+        node = extract_node("""
+            from {} import UsesTimestamp
+            msg = UsesTimestamp()
+            msg.ts.GetCurrentTime()
+        """.format(wkt_mod))
+        self.assert_no_messages(node)
