@@ -1,6 +1,7 @@
 import pytest
 import astroid
 import pylint.testutils
+from conftest import CheckerTestCase
 
 import pylint_protobuf
 
@@ -37,7 +38,7 @@ def repeated_external_composite_mod(proto_builder):
 
 # repeated scalar (append) vs repeated composite (add)
 
-class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
+class TestProtobufRepeatedFields(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_no_warnings(self, repeated_scalar_mod):
@@ -281,6 +282,25 @@ class TestProtobufRepeatedFields(pylint.testutils.CheckerTestCase):
         """.format(repeated=repeated_composite_mod))
         with self.assertNoMessages():
             self.walk(node.root())
+
+    @pytest.mark.xfail(reason='unimplemented: checking call on non-constructors')
+    def test_unknown_kwarg_on_repeated_kwargs(self, repeated_composite_mod):
+        node = self.extract_node("""
+            import {mod}
+            outer = {mod}.Outer()
+            outer.values.add(should_warn=123)
+        """.format(mod=repeated_composite_mod))
+        pytest.fail('TODO: figure out if this should be undefined-attribute or unexpected-keyword-arg')
+
+    @pytest.mark.xfail(reason='unimplemented: checking call on non-constructors')
+    def test_typeerror_on_repeated_kwargs(self, repeated_composite_mod):
+        node = self.extract_node("""
+            import {mod}
+            outer = {mod}.Outer()
+            outer.values.add(value=123)
+        """.format(mod=repeated_composite_mod))
+        msg = self.type_error_msg(node, 'Inner', 'value', 'str', 123)
+        self.assert_adds_messages(node, msg)
 
 
 @pytest.fixture
