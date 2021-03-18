@@ -2,6 +2,7 @@
 
 ## [0.19.0] - Unreleased
 - Add support for imported message definitions via 'import "foo.proto";'
+- Add support for field groups
 
 ## [0.18.5] - 2021-03-17
 - Fix false positive protobuf-type-error on numeric scalar fields supporting

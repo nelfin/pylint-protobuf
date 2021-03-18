@@ -68,7 +68,7 @@ def is_repeated(fd):
 
 def is_composite(fd):
     # type: (FieldDescriptor) -> bool
-    return fd.type == FieldDescriptor.TYPE_MESSAGE
+    return fd.type in (FieldDescriptor.TYPE_MESSAGE, FieldDescriptor.TYPE_GROUP)
 
 def is_map_field(fd):  # FIXME: too many selectors
     # type: (FieldDescriptor) -> bool
