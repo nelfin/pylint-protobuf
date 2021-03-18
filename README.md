@@ -40,6 +40,19 @@ Add or update `pylintrc` to load `pylint-protobuf`:
 
 `pylint-protobuf` supports Python 3.5 at a minimum.
 
+## Known Issues
+
+`pylint-protobuf` does not currently support the following concepts:
+
+* Extensions
+
+        message Example {
+          extensions 100 to 199;
+        }
+        extend Example {
+            optional int32 count = 123;
+        }
+
 ## Alternatives
 
 ### mypy-protobuf
