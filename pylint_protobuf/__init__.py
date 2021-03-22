@@ -195,6 +195,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         desc = _get_protobuf_descriptor(node.func)
         if desc is None:
             return
+        desc_name = desc.name
         keywords = node.keywords or []
         for kw in keywords:
             arg_name, val_node = kw.arg, kw.value
@@ -202,51 +203,57 @@ class ProtobufDescriptorChecker(BaseChecker):
                 continue  # should raise "unexpected-keyword-arg"
             fd = desc.fields_by_name[arg_name]
             arg_type = to_pytype(fd)
+            desc_name = desc.name
             if is_composite(fd):
-                # messages
-                for val in _get_inferred_values(val_node):
-                    if isinstance(val, astroid.Const):
-                        if val.value is not None:
-                            # Special-case None as default of keyword args
-                            self.add_message('protobuf-type-error', node=node,
-                                             args=(desc.name, arg_name, arg_type.__name__, val.value))
-                        break
-                    val_desc = _get_protobuf_descriptor(val)
-                    if val_desc is None:
-                        continue  # XXX: ignore?
-                    if not val_desc.is_typeof_field(fd):
-                        val = '{}()'.format(val_desc.name)
-                        self.add_message('protobuf-type-error', node=node,
-                                         args=(desc.name, arg_name, arg_type.__name__, val))
+                self._check_composite_keyword(arg_name, arg_type, fd, node, val_node, desc_name)
             else:
-                for val_const in _get_inferred_values(val_node):
-                    if hasattr(val_const, 'value'):
-                        val = val_const.value
-                    elif hasattr(val_const, '_proxied'):
-                        # check for <Instance of builtins.int> etc.
-                        val = _resolve_builtin(val_const)
-                        if val is None:  # check for composite assigned to scalar
-                            try:
-                                val = '{}()'.format(val_const.name)
-                            except AttributeError:
-                                continue
-                            self.add_message('protobuf-type-error', node=node,
-                                             args=(desc.name, arg_name, arg_type.__name__, val))
-                            break
-                    else:
-                        try:
-                            val = '{}()'.format(val_const.name)
-                        except AttributeError:
-                            continue
-                        self.add_message('protobuf-type-error', node=node,
-                                         args=(desc.name, arg_name, arg_type.__name__, val))
-                        break
-                    if not _scalar_typecheck(val, arg_type):
-                        if val is not None:
-                            # Special-case None as default of keyword args
-                            self.add_message('protobuf-type-error', node=node,
-                                             args=(desc.name, arg_name, arg_type.__name__, val))
-                        break
+                self._check_noncomposite_keyword(arg_name, arg_type, node, val_node, desc_name)
+
+    def _check_composite_keyword(self, arg_name, arg_type, fd, node, val_node, desc_name):
+        for val in _get_inferred_values(val_node):
+            if isinstance(val, astroid.Const):
+                if val.value is not None:
+                    # Special-case None as default of keyword args
+                    self.add_message('protobuf-type-error', node=node,
+                                     args=(desc_name, arg_name, arg_type.__name__, val.value))
+                break
+            val_desc = _get_protobuf_descriptor(val)
+            if val_desc is None:
+                continue  # XXX: ignore?
+            if not val_desc.is_typeof_field(fd):
+                val = '{}()'.format(val_desc.name)
+                self.add_message('protobuf-type-error', node=node,
+                                 args=(desc_name, arg_name, arg_type.__name__, val))
+
+    def _check_noncomposite_keyword(self, arg_name, arg_type, node, val_node, desc_name):
+        for val_const in _get_inferred_values(val_node):
+            if hasattr(val_const, 'value'):
+                val = val_const.value
+            elif hasattr(val_const, '_proxied'):
+                # check for <Instance of builtins.int> etc.
+                val = _resolve_builtin(val_const)
+                if val is None:  # check for composite assigned to scalar
+                    try:
+                        val = '{}()'.format(val_const.name)
+                    except AttributeError:
+                        continue
+                    self.add_message('protobuf-type-error', node=node,
+                                     args=(desc_name, arg_name, arg_type.__name__, val))
+                    break
+            else:
+                try:
+                    val = '{}()'.format(val_const.name)
+                except AttributeError:
+                    continue
+                self.add_message('protobuf-type-error', node=node,
+                                 args=(desc_name, arg_name, arg_type.__name__, val))
+                break
+            if not _scalar_typecheck(val, arg_type):
+                if val is not None:
+                    # Special-case None as default of keyword args
+                    self.add_message('protobuf-type-error', node=node,
+                                     args=(desc_name, arg_name, arg_type.__name__, val))
+                break
 
     @utils.check_messages('protobuf-type-error')
     def _check_repeated_scalar(self, node):
