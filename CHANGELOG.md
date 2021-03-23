@@ -3,6 +3,8 @@
 ## [0.19.0] - Unreleased
 - Add support for imported message definitions via 'import "foo.proto";'
 - Add support for field groups
+- Fix false positive protobuf-type-error on assigning iterables to repeated
+  fields in message constructors (#43). Thanks @pashatyl for the report
 
 ## [0.18.5] - 2021-03-17
 - Fix false positive protobuf-type-error on numeric scalar fields supporting

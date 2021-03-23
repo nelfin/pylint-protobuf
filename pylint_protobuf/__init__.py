@@ -69,7 +69,7 @@ def wellknowntype(node):
 def _get_inferred_values(node):
     # type: (Node) -> List[Node]
     try:
-        vals = node.inferred()
+        vals = list(node.infer())  # not the same as node.inferred() for astroid.Instance
     except astroid.InferenceError:
         return []
     return [v for v in vals if v is not astroid.Uninferable]
@@ -203,11 +203,24 @@ class ProtobufDescriptorChecker(BaseChecker):
                 continue  # should raise "unexpected-keyword-arg"
             fd = desc.fields_by_name[arg_name]
             arg_type = to_pytype(fd)
-            desc_name = desc.name
-            if is_composite(fd):
-                self._check_composite_keyword(arg_name, arg_type, fd, node, val_node, desc_name)
+            if isinstance(val_node, astroid.Call):
+                val_node = _get_inferred_values(val_node)
+                if len(val_node) != 1:
+                    continue  # don't reason about ambiguous cases or uninferable
+                val_node = val_node[0]
+            if is_repeated(fd):
+                # What to do about iterators? At a certain point, inference becomes too complicated
+                elements = getattr(val_node, 'elts', [])
+                for element in elements:
+                    if is_composite(fd):
+                        self._check_composite_keyword(arg_name, arg_type, fd, node, element, desc_name)
+                    else:
+                        self._check_noncomposite_keyword(arg_name, arg_type, node, element, desc_name)
             else:
-                self._check_noncomposite_keyword(arg_name, arg_type, node, val_node, desc_name)
+                if is_composite(fd):
+                    self._check_composite_keyword(arg_name, arg_type, fd, node, val_node, desc_name)
+                else:
+                    self._check_noncomposite_keyword(arg_name, arg_type, node, val_node, desc_name)
 
     def _check_composite_keyword(self, arg_name, arg_type, fd, node, val_node, desc_name):
         for val in _get_inferred_values(val_node):

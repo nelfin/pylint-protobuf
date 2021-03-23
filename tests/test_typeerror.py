@@ -2,6 +2,7 @@ import pytest
 import astroid
 import pylint.testutils
 
+from conftest import CheckerTestCase
 import pylint_protobuf
 
 
@@ -312,3 +313,88 @@ def test_issue40_with_warnings(person_pb2, module_builder, linter_factory):
         pylint_protobuf.MESSAGES['E5903'][0] % ('Person', 'code', 'int', 'of type float'),  # Preferred
     ]
     assert sorted(actual_messages) == sorted(expected_messages)
+
+
+@pytest.fixture
+def repeated_scalar_pb2(proto_builder):
+    return proto_builder("""
+        message RepeatedScalar {
+            repeated string values = 1;
+        }
+    """)
+
+
+@pytest.fixture
+def repeated_composite_pb2(proto_builder):
+    return proto_builder("""
+        message RepeatedMessage {
+            message Inner {
+                required string value = 1;
+            }
+            repeated Inner values = 1;
+        }
+    """)
+
+
+class TestRepeatedTypeError(CheckerTestCase):
+    CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
+
+    def test_issue43_no_typeerror_on_repeated_scalar_no_warn(self, repeated_scalar_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedScalar
+            RepeatedScalar(values=['abc', '123'])
+        """.format(repeated_scalar_pb2))
+        self.assert_no_messages(node)
+
+    @pytest.mark.skip(reason='passes spuriously, iterators are uninferable')
+    def test_issue43_no_typeerror_on_iter_no_warn(self, repeated_scalar_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedScalar
+            RepeatedScalar(values=map(str, range(3)))
+        """.format(repeated_scalar_pb2))
+        self.assert_no_messages(node)
+
+    def test_issue43_typeerror_on_repeated_scalar_warns(self, repeated_scalar_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedScalar
+            RepeatedScalar(values=[123])
+        """.format(repeated_scalar_pb2))
+        msg = self.type_error_msg(node, 'RepeatedScalar', 'values', 'str', 123)
+        self.assert_adds_messages(node, msg)
+
+    @pytest.mark.skip(reason='iterators are uninferable')
+    def test_issue43_typeerror_on_iter_repeated_scalar_warns(self, repeated_scalar_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedScalar
+            RepeatedScalar(values=iter([123]))
+        """.format(repeated_scalar_pb2))
+        msg = self.type_error_msg(node, 'RepeatedScalar', 'values', 'str', 123)
+        self.assert_adds_messages(node, msg)
+
+    def test_issue43_no_typeerror_on_repeated_composite_no_warn(self, repeated_composite_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedMessage
+            RepeatedMessage(values=[
+                RepeatedMessage.Inner(value='abc'),
+                RepeatedMessage.Inner(value='123'),
+            ])
+        """.format(repeated_composite_pb2))
+        self.assert_no_messages(node)
+
+    def test_issue43_typeerror_on_repeated_composite_warns(self, repeated_composite_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedMessage
+            RepeatedMessage(values=['abc'])
+        """.format(repeated_composite_pb2))
+        msg = self.type_error_msg(node, 'RepeatedMessage', 'values', 'Inner', 'abc')
+        self.assert_adds_messages(node, msg)
+
+    def test_issue43_typeerror_on_inner_warns(self, repeated_composite_pb2):
+        node = astroid.extract_node("""
+            from {} import RepeatedMessage
+            RepeatedMessage(values=[
+                RepeatedMessage.Inner(value=123),  #@
+            ])
+        """.format(repeated_composite_pb2))
+        msg = self.type_error_msg(node, 'Inner', 'value', 'str', 123)
+        self.assert_adds_messages(node, msg)
