@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.19.0] - Unreleased
+## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'
 - Add support for field groups
 - Fix false positive protobuf-type-error on assigning iterables to repeated
