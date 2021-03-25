@@ -1,6 +1,8 @@
 import pytest
 import astroid
 import pylint.testutils
+import pylint.checkers.typecheck
+
 from conftest import CheckerTestCase
 
 import pylint_protobuf
@@ -283,16 +285,15 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    @pytest.mark.xfail(reason='unimplemented: checking call on non-constructors')
-    def test_unknown_kwarg_on_repeated_kwargs(self, repeated_composite_mod):
+    def test_no_posargs_on_repeated_add(self, repeated_composite_mod):
         node = self.extract_node("""
             import {mod}
             outer = {mod}.Outer()
-            outer.values.add(should_warn=123)
+            outer.values.add(123)
         """.format(mod=repeated_composite_mod))
-        pytest.fail('TODO: figure out if this should be undefined-attribute or unexpected-keyword-arg')
+        msg = self.no_posargs_msg(node)
+        self.assert_adds_messages(node, msg)
 
-    @pytest.mark.xfail(reason='unimplemented: checking call on non-constructors')
     def test_typeerror_on_repeated_kwargs(self, repeated_composite_mod):
         node = self.extract_node("""
             import {mod}
@@ -325,4 +326,22 @@ def test_no_E1101_on_repeated_fields(scalar_warnings_mod, linter_factory):
     ]
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert actual_messages
+    assert sorted(actual_messages) == sorted(expected_messages)
+
+
+def test_E1123_on_repeated_add(repeated_composite_mod, module_builder, linter_factory):
+    warnings_mod = module_builder("""
+        import {mod}
+        outer = {mod}.Outer()
+        outer.values.add(should_warn=123)
+    """.format(mod=repeated_composite_mod), 'unexpect_kwarg_in_add')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['unexpected-keyword-arg', 'protobuf-type-error'],
+    )
+    linter.check([warnings_mod])
+    expected_messages = [
+        pylint.checkers.typecheck.MSGS['E1123'][0] % ('should_warn', 'constructor')
+    ]
+    actual_messages = [m.msg for m in linter.reporter.messages]
     assert sorted(actual_messages) == sorted(expected_messages)

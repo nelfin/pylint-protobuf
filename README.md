@@ -55,11 +55,6 @@ Add or update `pylintrc` to load `pylint-protobuf`:
 
 * HasField()/ClearField(): there are no checks on the validity of calls to these
   methods
-* Checking keyword arguments provided to .add() for repeated composite fields:
-  the returned message definitions are checked as normal, but type- and
-  sanity-checking arguments provided to message constructors is only currently
-  supported on the constructors themselves, not the .add() method for repeated
-  fields
 
 ## Alternatives
 

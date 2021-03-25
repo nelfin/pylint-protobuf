@@ -99,7 +99,7 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
     undefined_attribute_msg = lambda self, node, *args: self._make_message('protobuf-undefined-attribute', node, args)
     enum_value_msg = lambda self, node, *args: self._make_message('protobuf-enum-value', node, args)
     type_error_msg = lambda self, node, *args: self._make_message('protobuf-type-error', node, args)
-    no_posargs_msg = lambda self, node, *args: self._make_message('protobuf-no-posargs', node, args)
+    no_posargs_msg = lambda self, node: self._make_message('protobuf-no-posargs', node, args=None)
     no_assignment_msg = lambda self, node, *args: self._make_message('protobuf-no-assignment', node, args)
 
 

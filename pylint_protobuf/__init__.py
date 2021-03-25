@@ -156,6 +156,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._check_init_posargs(node)
         self._check_init_kwargs(node)
         self._check_repeated_scalar(node)
+        self._check_repeated_composite(node)
 
     @utils.check_messages('protobuf-enum-value')
     def _check_enum_values(self, node):
@@ -182,17 +183,38 @@ class ProtobufDescriptorChecker(BaseChecker):
                 self.add_message('protobuf-enum-value', args=(val, desc.name), node=node)
                 break  # should we continue to check?
 
-    @utils.check_messages('protobuf-no-posargs')
     def _check_init_posargs(self, node):
         # type: (astroid.Call) -> None
         desc = _get_protobuf_descriptor(node.func)
-        if desc is not None and len(node.args) > 0:
-            self.add_message('protobuf-no-posargs', node=node)
+        self._check_posargs(desc, node)
 
-    @utils.check_messages('protobuf-type-error')
     def _check_init_kwargs(self, node):
         # type: (astroid.Call) -> None
         desc = _get_protobuf_descriptor(node.func)
+        self._check_kwargs(desc, node)
+
+    def _check_repeated_composite(self, node):
+        # type: (astroid.Call) -> None
+        func = node.func
+        if not isinstance(func, astroid.Attribute) or func.attrname != 'add':
+            return # Call should look like "message.inner.add(**kwargs)"
+        desc = None  # type: Optional[SimpleDescriptor]
+        for val in _get_inferred_values(node):
+            desc = _get_protobuf_descriptor(val)
+            if desc is not None:
+                break  # I don't think there's a reasonable solution for ambiguous cases
+        self._check_posargs(desc, node)
+        self._check_kwargs(desc, node)
+
+    @utils.check_messages('protobuf-no-posargs')
+    def _check_posargs(self, desc, node):
+        # type: (Optional[SimpleDescriptor], astroid.Call) -> None
+        if desc is not None and len(node.args) > 0:
+            self.add_message('protobuf-no-posargs', node=node)
+
+    @utils.check_messages('protobuf-type-error', 'unexpected-keyword-arg')
+    def _check_kwargs(self, desc, node):
+        # type: (Optional[SimpleDescriptor], astroid.Call) -> None
         if desc is None:
             return
         desc_name = desc.name
@@ -200,7 +222,11 @@ class ProtobufDescriptorChecker(BaseChecker):
         for kw in keywords:
             arg_name, val_node = kw.arg, kw.value
             if arg_name not in desc.fields_by_name:
-                continue  # should raise "unexpected-keyword-arg"
+                # This is probably too fragile (should it be replaced by a separate message?)
+                # Also, it's probably not fair to always refer to this as a constructor call, though arguably
+                # .add() on repeated composite fields is "constructing" the sub-message
+                self.add_message('unexpected-keyword-arg', node=node, args=(arg_name, 'constructor'))
+                continue
             fd = desc.fields_by_name[arg_name]
             arg_type = to_pytype(fd)
             if isinstance(val_node, astroid.Call):

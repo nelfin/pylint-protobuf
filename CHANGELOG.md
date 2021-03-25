@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [0.20.0] - Unreleased
+- Add support for checking arguments to .add() methods of repeated composite
+  fields (similar to message constructors)
+
 ## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'
 - Add support for field groups
