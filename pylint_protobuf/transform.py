@@ -13,7 +13,8 @@ try:
 except ImportError:  # pragma: nocover
     import sys
     import warnings
-    if sys.version_info >= (3, 9):
+    from google.protobuf import __version__ as _protobuf_version
+    if _protobuf_version <= '3.15.0' and sys.version_info >= (3, 9):
         warnings.warn(
             "google.protobuf (earlier than 3.15.x) does not support Python 3.9"
             " (see https://github.com/protocolbuffers/protobuf/issues/7978)"
