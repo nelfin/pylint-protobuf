@@ -3,6 +3,12 @@
 ## [0.20.0] - Unreleased
 - Add support for checking arguments to .add() methods of repeated composite
   fields (similar to message constructors)
+- Add support for checking validity of arguments to HasField()/ClearField()
+  calls on message fields. This change raises "protobuf-undefined-attribute"
+  when called correctly with an unknown field and adds two new warning message
+  types: "protobuf-no-repeated-membership" for checking a non-singular field,
+  and "protobuf-no-proto3-membership" for checking a non-optional,
+  non-submessage field in proto3
 
 ## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'

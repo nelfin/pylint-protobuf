@@ -5,7 +5,7 @@ import astroid
 from pylint.checkers import BaseChecker, utils
 from pylint.interfaces import IAstroidChecker
 
-from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite, is_repeated
+from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite, is_repeated, is_oneof
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
 _MISSING_IMPORT_IS_ERROR = False
@@ -13,10 +13,10 @@ BASE_ID = 59
 MESSAGES = {
     'E%02d01' % BASE_ID: (
         'Field %r does not appear in the declared fields of protobuf-'
-        'generated class %r and will raise AttributeError on access',
+        'generated class %r',
         'protobuf-undefined-attribute',
         'Used when an undefined field of a protobuf generated class is '
-        'accessed'
+        'accessed, assigned, or passed to HasField/ClearField'
     ),
     'E%02d02' % BASE_ID: (
         'Value %r does not appear in the declared values of protobuf-'
@@ -43,6 +43,18 @@ MESSAGES = {
         'protobuf-no-assignment',
         'Used when a value is written to a read-only field such as a '
         'composite or repeated field'
+    ),
+    'E%02d06' % BASE_ID: (
+        'Repeated fields cannot be checked for membership',
+        'protobuf-no-repeated-membership',
+        'Used when calling HasField/ClearField on a repeated field'
+    ),
+    'E%02d07' % BASE_ID: (
+        'Non-optional, non-submessage field %r cannot be checked for '
+        'membership in proto3 messages',
+        'protobuf-no-proto3-membership',
+        'Used when calling HasField/ClearField on a non-composite, '
+        'non-oneof field in a proto3 syntax file'
     ),
 }
 WELLKNOWNTYPE_MODULES = [
@@ -157,6 +169,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._check_init_kwargs(node)
         self._check_repeated_scalar(node)
         self._check_repeated_composite(node)
+        self._check_hasfield(node)
 
     @utils.check_messages('protobuf-enum-value')
     def _check_enum_values(self, node):
@@ -350,6 +363,37 @@ class ProtobufDescriptorChecker(BaseChecker):
                                  args=(desc.name, arg_name, arg_type.__name__, val))
         for val in vals:
             check_arg(val)
+
+    @utils.check_messages(
+        'protobuf-undefined-attribute',
+        'protobuf-no-repeated-membership',
+        'protobuf-no-proto3-membership',
+    )
+    def _check_hasfield(self, node):
+        # type: (astroid.Call) -> None
+        attr = node.func
+        if not isinstance(attr, astroid.Attribute) or attr.attrname not in ('HasField', 'ClearField'):
+            return
+        desc = _get_protobuf_descriptor(attr.expr)
+        if desc is None:
+            return
+        for arg in node.args:
+            for val in _get_inferred_values(arg):
+                if not hasattr(val, 'value'):
+                    continue
+                if val.value not in desc.field_names:
+                    self.add_message('protobuf-undefined-attribute', node=node, args=(val.value, desc.name))
+                    continue
+                fd = desc.fields_by_name[val.value]
+                if is_repeated(fd):
+                    self.add_message('protobuf-no-repeated-membership', node=node)
+                    continue
+                if desc.proto3:
+                    if not is_composite(fd) and not is_oneof(fd):
+                        # all fields in proto3 are labelled optional
+                        # "optional" fields are members of a singular oneof
+                        self.add_message('protobuf-no-proto3-membership', node=node, args=(val.value,))
+                        continue
 
     @utils.check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):

@@ -74,6 +74,15 @@ def is_map_field(fd):  # FIXME: too many selectors
     # type: (FieldDescriptor) -> bool
     return is_composite(fd) and fd.message_type.has_options and fd.message_type.GetOptions().map_entry
 
+def is_optional(fd):
+    # type: (FieldDescriptor) -> bool
+    # Only relevant for proto2
+    return fd.label == FieldDescriptor.LABEL_OPTIONAL
+
+def is_oneof(fd):
+    # type: (FieldDescriptor) -> bool
+    return fd.containing_oneof is not None
+
 
 class TODO(object):
     pass  # These fields are not assignable
@@ -135,6 +144,11 @@ class SimpleDescriptor(object):
     def is_typeof_field(self, fd):
         # type: (FieldDescriptor) -> bool
         return fd.message_type is self._desc
+
+    @property
+    def proto3(self):
+        # type: () -> bool
+        return self._desc.file.syntax == 'proto3'
 
     @property
     def identifier(self):

@@ -53,9 +53,6 @@ Add or update `pylintrc` to load `pylint-protobuf`:
             optional int32 count = 123;
         }
 
-* HasField()/ClearField(): there are no checks on the validity of calls to these
-  methods
-
 ## Alternatives
 
 ### mypy-protobuf
