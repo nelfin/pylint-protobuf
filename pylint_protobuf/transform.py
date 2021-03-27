@@ -42,6 +42,7 @@ PROTOBUF_IMPLICIT_ATTRS = [
     'CopyFrom',
     'DESCRIPTOR',
     'DiscardUnknownFields',
+    'Extensions',
     'HasExtension',
     'HasField',
     'IsInitialized',
@@ -146,6 +147,10 @@ class SimpleDescriptor(object):
         # type: (FieldDescriptor) -> bool
         return fd.message_type is self._desc
 
+    def is_extended_by(self, fd):
+        # type: (FieldDescriptor) -> bool
+        return fd.is_extension and fd.containing_type is self._desc
+
     @property
     def proto3(self):
         # type: () -> bool
@@ -177,6 +182,13 @@ class SimpleDescriptor(object):
                 def __getattr__(self, item):
                     return None
             return FalseyAttributes()
+
+    @property
+    def extensions_by_name(self):
+        # type: () -> Dict[str, FieldDescriptor]
+        if self.is_enum:
+            return dict()
+        return dict(self._desc.extensions_by_name)
 
     @property
     def fields(self):
@@ -396,6 +408,13 @@ def _template_message(desc, descriptor_registry):
     initialisers += [
         'self.{} = {}.{}()  # external_fields (imports)'.format(field_name, qualifier, field_type)
         for _, field_name, qualifier, field_type in externals
+    ]
+
+    # Extensions should show up as attributes on message instances but not
+    # as keyword arguments in message constructors
+    initialisers += [
+        'self.{} = object()  # extensions'.format(ext_name)
+        for ext_name in desc.extensions_by_name
     ]
 
     args = ['self'] + ['{}=None'.format(f) for f in slots]

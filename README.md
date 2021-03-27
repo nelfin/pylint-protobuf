@@ -44,14 +44,8 @@ Add or update `pylintrc` to load `pylint-protobuf`:
 
 `pylint-protobuf` does not currently support the following concepts:
 
-* Extensions
-
-        message Example {
-          extensions 100 to 199;
-        }
-        extend Example {
-            optional int32 count = 123;
-        }
+* Some features of extensions: non-nested extensions, HasExtension(),
+  ClearExtension(), type checking
 
 ## Alternatives
 

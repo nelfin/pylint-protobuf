@@ -103,6 +103,7 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
     no_assignment_msg = lambda self, node, *args: self.make_message('protobuf-no-assignment', node, args)
     no_repeated_membership_msg = lambda self, node: self.make_message('protobuf-no-repeated-membership', node, args=None)
     no_proto3_membership_msg = lambda self, node, *args: self.make_message('protobuf-no-proto3-membership', node, args)
+    wrong_extension_scope_msg = lambda self, node, *args: self.make_message('protobuf-wrong-extension-scope', node, args)
 
 
 @pytest.fixture

@@ -9,6 +9,8 @@
   types: "protobuf-no-repeated-membership" for checking a non-singular field,
   and "protobuf-no-proto3-membership" for checking a non-optional,
   non-submessage field in proto3
+- Add support for checking extension fields. Adds a new warning message
+  "protobuf-wrong-extension-scope"
 
 ## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'

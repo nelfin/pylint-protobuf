@@ -56,6 +56,12 @@ MESSAGES = {
         'Used when calling HasField/ClearField on a non-composite, '
         'non-oneof field in a proto3 syntax file'
     ),
+    'E%02d08' % BASE_ID: (
+        'Extension field %r does not belong to message %r',
+        'protobuf-wrong-extension-scope',
+        'Used when attempting to set an extension on a message when '
+        'it is not the containing type for that field'
+    ),
 }
 WELLKNOWNTYPE_MODULES = [
     'any_pb2',
@@ -432,7 +438,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             return
         desc = cls_def._protobuf_descriptor  # type: SimpleDescriptor
         self._disable('no-member', node.lineno)  # Should always be checked by us instead
-        if node.attrname not in desc.field_names:
+        if node.attrname not in desc.field_names and node.attrname not in desc.extensions_by_name:
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
             self._disable('assigning-non-slot', node.lineno)
         else:
@@ -474,6 +480,31 @@ class ProtobufDescriptorChecker(BaseChecker):
             return
         if node.attrname not in mod.locals:
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, mod.name), node=node)
+
+    def visit_subscript(self, node):
+        self._check_extension_getitem(node)
+
+    @utils.check_messages('protobuf-wrong-extension-scope')
+    def _check_extension_getitem(self, node):
+        # type: (astroid.Subscript) -> None
+        attr, slice = node.value, node.slice
+        if not isinstance(attr, astroid.Attribute) or attr.attrname != 'Extensions':
+            return
+        if not isinstance(slice, astroid.Index) or not isinstance(slice.value, astroid.Attribute):
+            return
+        target_desc = _get_protobuf_descriptor(attr.expr)
+        ext_desc = _get_protobuf_descriptor(slice.value.expr)
+        if target_desc is None:
+            return
+        ext_name = slice.value.attrname
+        if ext_desc is not None:
+            if ext_name not in ext_desc.extensions_by_name:
+                return  # should raise protobuf-undefined-attribute elsewhere
+            fd = ext_desc.extensions_by_name[ext_name]
+        else:  # ext_desc is None
+            return  # TODO for now
+        if not target_desc.is_extended_by(fd):
+            self.add_message('protobuf-wrong-extension-scope', node=node, args=(ext_name, target_desc.name))
 
     def _disable(self, msgid, line, scope='module'):
         try:
