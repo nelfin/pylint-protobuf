@@ -417,6 +417,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             vals = node.expr.inferred()
         except astroid.InferenceError:
             return  # TODO: warn or redo
+        descriptors = []  # type: List[SimpleDescriptor]
         # Look for any version of the inferred type to be a Protobuf class
         for val in vals:
             cls_def = None
@@ -432,18 +433,27 @@ class ProtobufDescriptorChecker(BaseChecker):
             elif isinstance(val, astroid.ClassDef):
                 cls_def = val
             if cls_def and getattr(cls_def, '_is_protobuf_class', False):
-                break  # getattr guards against Uninferable (always returns self)
+                # getattr guards against Uninferable (always returns self so can't use hasattr)
+                descriptors.append(cls_def._protobuf_descriptor)
+
+        found = None  # type: Optional[SimpleDescriptor]
+        missing = []  # type: List[SimpleDescriptor]
+        for desc in descriptors:
+            if node.attrname in desc.field_names or node.attrname in desc.extensions_by_name:
+                found = desc
+                self._disable('no-member', node.lineno)  # Should always be checked by us instead
+                break
+            missing.append(desc)
         else:
-            # couldn't find cls_def
-            return
-        desc = cls_def._protobuf_descriptor  # type: SimpleDescriptor
-        self._disable('no-member', node.lineno)  # Should always be checked by us instead
-        if node.attrname not in desc.field_names and node.attrname not in desc.extensions_by_name:
-            self.add_message('protobuf-undefined-attribute', args=(node.attrname, cls_def.name), node=node)
+            if len(missing) != 1:
+                return  # don't attempt to warn on multiple options
+            desc = missing[0]
+            self.add_message('protobuf-undefined-attribute', args=(node.attrname, desc.name), node=node)
+            self._disable('no-member', node.lineno)  # Should always be checked by us instead
             self._disable('assigning-non-slot', node.lineno)
-        else:
-            self._check_type_error(node, desc)
-            self._check_no_assign(node, desc)
+        if found is not None:
+            self._check_type_error(node, found)
+            self._check_no_assign(node, found)
 
     @utils.check_messages('protobuf-type-error')
     def _check_type_error(self, node, desc):

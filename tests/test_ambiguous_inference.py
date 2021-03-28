@@ -33,3 +33,29 @@ def test_no_E1101_on_node_inference(inference_mod, linter_factory):
     linter.check([inference_mod])
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert not actual_messages
+
+
+def test_issue44_no_warnings_if_any_matches(proto_builder, module_builder, linter_factory):
+    pb2 = proto_builder("""
+        message Example {
+            required int32 value = 1;
+        }
+        message DifferentExample {
+            required int32 different_value = 1;
+        }
+    """)
+    mod = module_builder("""
+        from {pb2} import Example, DifferentExample
+        request = Example(value=123)
+        if 1 + 1 == 2:
+            request = DifferentExample()
+            if 2 + 2 == 4:
+                request.different_value = 456
+    """.format(pb2=pb2), 'issue44_example1')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute']
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert not actual_messages
