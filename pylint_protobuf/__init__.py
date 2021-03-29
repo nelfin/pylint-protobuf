@@ -422,7 +422,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         for val in vals:
             cls_def = None
             if val is astroid.Uninferable:
-                continue
+                return  # break early (ref #44 and astroid 03d15b0)
             if hasattr(val, '_proxied'):
                 if wellknowntype(val):
                     self._disable('no-member', node.lineno)
