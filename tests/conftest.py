@@ -1,4 +1,5 @@
 import os
+import sys
 import textwrap
 from subprocess import check_call
 
@@ -10,7 +11,7 @@ from pylint.lint import PyLinter
 from pylint.testutils import MinimalTestReporter
 
 import pylint_protobuf
-
+import google.protobuf.pyext._message, google.protobuf.descriptor_pool
 
 @pytest.fixture(autouse=True)
 def error_on_missing_modules(request):
@@ -59,8 +60,13 @@ def proto_builder(tmpdir, monkeypatch, request):
         if package:
             pb2_name = '{}.{}'.format(package, pb2_name)
         return pb2_name
+    monkeypatch.setattr(sys, 'modules', sys.modules.copy())
+    # XXX: protobuf descriptor pool is a singleton breaking unit test isolation
+    monkeypatch.setattr(
+        google.protobuf.pyext._message, 'default_pool',
+        google.protobuf.descriptor_pool.DescriptorPool()
+    )
     yield proto
-    tmpdir.remove()
 
 
 @pytest.fixture
@@ -70,7 +76,8 @@ def module_builder(tmpdir, monkeypatch):
         p.write(textwrap.dedent(source))
         monkeypatch.syspath_prepend(tmpdir)
         return name
-    return module
+    monkeypatch.setattr(sys, 'modules', sys.modules.copy())
+    yield module
 
 
 def extract_node(source):
