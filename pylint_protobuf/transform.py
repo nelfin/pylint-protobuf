@@ -34,6 +34,12 @@ except ImportError:  # pragma: nocover
     class ScalarMap:
         pass
 
+try:
+    from google.protobuf.internal.well_known_types import WKTBASES
+except ImportError:
+    WKTBASES = {}
+
+
 PROTOBUF_IMPLICIT_ATTRS = [
     'ByteSize',
     'Clear',
@@ -128,6 +134,11 @@ def full_name(fd):
     return '.'.join(field_type_path(fd))
 
 
+def _nonprotected_members(cls):
+    # type: (type) -> Set[str]
+    return set(m for m in dir(cls) if not m.startswith('_'))
+
+
 class SimpleDescriptor(object):
     def __init__(self, desc):
         # type: (Union[EnumDescriptor, Descriptor]) -> None
@@ -136,8 +147,9 @@ class SimpleDescriptor(object):
             self._enum_desc = desc
         else:
             self._is_protobuf_enum = False
-            self._desc = desc
+            self._desc = desc  # type: Descriptor
         self._cls_hash = str(id(self))  # err...
+        self.bases = []
 
     def is_nested(self, fd):
         # type: (FieldDescriptor) -> bool
@@ -174,6 +186,14 @@ class SimpleDescriptor(object):
             return self._desc.name
 
     @property
+    def full_name(self):
+        # type: () -> str
+        if self._is_protobuf_enum:
+            return self._enum_desc.full_name
+        else:
+            return self._desc.full_name
+
+    @property
     def options(self):
         if self._desc.has_options:
             return self._desc.GetOptions()
@@ -201,12 +221,15 @@ class SimpleDescriptor(object):
         if self._is_protobuf_enum:
             return set(self._enum_desc.values_by_name) | set(PROTOBUF_ENUM_IMPLICIT_ATTRS)
         else:
+            base_fields = set(PROTOBUF_IMPLICIT_ATTRS)  # TODO: move this into bases
+            for base_cls in self.bases:
+                base_fields |= _nonprotected_members(base_cls)
             desc = self._desc  # type: Descriptor
             return set(desc.fields_by_name) | \
                    set(desc.enum_values_by_name) | \
                    set(desc.enum_types_by_name) | \
                    set(desc.nested_types_by_name) | \
-                   set(PROTOBUF_IMPLICIT_ATTRS)
+                   base_fields
 
     @property
     def fields_by_name(self):
@@ -354,6 +377,8 @@ def _template_message(desc, descriptor_registry):
     """
     this_file = desc.file
     desc = SimpleDescriptor(desc)
+    if desc.full_name in WKTBASES:
+        desc.bases.append(WKTBASES[desc.full_name])
     descriptor_registry[desc.identifier] = desc
 
     slots = desc.field_names

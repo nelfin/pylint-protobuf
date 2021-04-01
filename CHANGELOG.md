@@ -15,6 +15,8 @@
   for ambiguous inference, this should reduce the incidence of false-positive
   messages for variables that could contain different protobuf messages (#44).
   Thanks @zoedberg for the report
+- Update handling of messages with full names matching well-known types to
+  match protobuf behaviour (#45). Thanks @zwn for the report
 
 ## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'
