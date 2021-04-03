@@ -183,12 +183,6 @@ class TestEnumDefinitions(CheckerTestCase):
         )
         self.assert_adds_messages(node, msg)
 
-    def test_issue16_toplevel_enum(self, nested_enum_mod):
-        self.assert_no_messages(extract_node("""
-            import {mod}
-            {mod}.ONE
-        """.format(mod=nested_enum_mod)))
-
     def test_issue16_nested_enum_definition_direct_reference_no_errors(self, nested_enum_mod):
         self.assert_no_messages(extract_node("""
             import {mod} as sut
@@ -221,22 +215,6 @@ class TestEnumDefinitions(CheckerTestCase):
             sut.Message.should_warn
         """.format(nested_enum_mod))
         msg = make_message(node, 'Message', 'should_warn')
-        self.assert_adds_messages(node, msg)
-
-    def test_issue16_missing_toplevel_enum(self, nested_enum_mod):
-        node = extract_node("""
-            import {} as sut
-            sut.UNO
-        """.format(nested_enum_mod))
-        msg = make_message(node, nested_enum_mod, 'UNO')
-        self.assert_adds_messages(node, msg)
-
-    def test_issue16_package_missing_toplevel_enum(self, package_nested_enum_mod):
-        node = extract_node("""
-            import {mod}
-            {mod}.UNO
-        """.format(mod=package_nested_enum_mod))
-        msg = make_message(node, package_nested_enum_mod, 'UNO')
         self.assert_adds_messages(node, msg)
 
     @pytest.mark.skipif(sys.version_info < (3, 0),
@@ -328,3 +306,46 @@ class TestEnumDefinitions(CheckerTestCase):
         """.format(nested_enum_mod))
         msg = make_message(node.func, 'Message', 'Value')
         self.assert_adds_messages(node, msg)
+
+
+def test_issue16_toplevel_enum(nested_enum_mod, module_builder, linter_factory):
+    mod = module_builder("""
+        import {pb2}
+        {pb2}.ONE
+    """.format(pb2=nested_enum_mod), 'toplevel_example1')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert not actual_messages
+
+
+def test_issue16_missing_toplevel_enum(request, nested_enum_mod, module_builder, linter_factory):
+    mod = module_builder("""
+        import {pb2} as sut
+        sut.UNO
+    """.format(pb2=nested_enum_mod), 'toplevel_example2')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert len(actual_messages) == 1
+    assert actual_messages[0].endswith("has no 'UNO' member")  # ignore dynamic module name
+
+
+def test_issue16_package_missing_toplevel_enum(package_nested_enum_mod, module_builder, linter_factory):
+    mod = module_builder("""
+        import {pb2}
+        {pb2}.UNO
+    """.format(pb2=package_nested_enum_mod), 'toplevel_example3')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert actual_messages == ["Module 'package.nested_enum_pb2' has no 'UNO' member"]

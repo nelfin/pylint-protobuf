@@ -71,3 +71,17 @@ class TestImportedProtoDefinitions(CheckerTestCase):
             msg.ts.GetCurrentTime()
         """.format(wkt_mod))
         self.assert_no_messages(node)
+
+
+def test_missing_member_on_module_should_only_raise_nomember(child_mod, module_builder, linter_factory):
+    mod = module_builder("""
+        import {pb2}
+        {pb2}.should_warn
+    """.format(pb2=child_mod), 'missing_example1')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert actual_messages == ["Module 'child_pb2' has no 'should_warn' member"]

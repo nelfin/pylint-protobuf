@@ -19,6 +19,8 @@
   match protobuf behaviour (#45). Thanks @zwn for the report
 - Remove special-case handling of well-known types and update to match
   existing behaviour of other protobuf messages
+- Remove "protobuf-undefined-attribute" on missing top-level module attributes
+  since this is better handled by "no-member"
 
 ## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'

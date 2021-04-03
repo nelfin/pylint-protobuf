@@ -407,8 +407,6 @@ class ProtobufDescriptorChecker(BaseChecker):
                 return  # break early (ref #44 and astroid 03d15b0)
             if hasattr(val, '_proxied'):
                 cls_def = val._proxied  # type: astroid.ClassDef
-            elif isinstance(val, astroid.Module):
-                return self._check_module(val, node)  # FIXME: move
             elif isinstance(val, astroid.ClassDef):
                 cls_def = val
             if cls_def and getattr(cls_def, '_is_protobuf_class', False):
@@ -462,13 +460,6 @@ class ProtobufDescriptorChecker(BaseChecker):
         fd = desc.fields_by_name[attr]
         if is_composite(fd) or is_repeated(fd):
             self.add_message('protobuf-no-assignment', node=node, args=(desc.name, attr))
-
-    def _check_module(self, mod, node):
-        # type: (astroid.Module, astroid.Attribute) -> None
-        if not is_some_protobuf_module(mod):
-            return
-        if node.attrname not in mod.locals:
-            self.add_message('protobuf-undefined-attribute', args=(node.attrname, mod.name), node=node)
 
     def visit_subscript(self, node):
         self._check_extension_getitem(node)
