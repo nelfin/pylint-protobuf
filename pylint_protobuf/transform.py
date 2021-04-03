@@ -568,4 +568,4 @@ def transform_module(mod):
 def is_some_protobuf_module(node):
     # type: (astroid.Module) -> bool
     modname = node.name
-    return modname.endswith('_pb2') and not modname.startswith('google.')
+    return modname.endswith('_pb2')

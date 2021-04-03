@@ -63,25 +63,7 @@ MESSAGES = {
         'it is not the containing type for that field'
     ),
 }
-WELLKNOWNTYPE_MODULES = [
-    'any_pb2',
-    'descriptor_pb2',
-    'duration_pb2',
-    'empty_pb2',
-    'field_mask_pb2',
-    'struct_pb2',
-    'timestamp_pb2',
-    'type_pb2',
-    'wrappers_pb2',
-]
 Node = astroid.node_classes.NodeNG
-
-
-def wellknowntype(node):
-    # type: (astroid.Instance) -> bool
-    modname, type_ = node.pytype().rsplit('.', 1)
-    return (modname in WELLKNOWNTYPE_MODULES) or \
-           (modname.startswith('google.protobuf') and modname.endswith('_pb2'))
 
 
 def _get_inferred_values(node):
@@ -424,9 +406,6 @@ class ProtobufDescriptorChecker(BaseChecker):
             if val is astroid.Uninferable:
                 return  # break early (ref #44 and astroid 03d15b0)
             if hasattr(val, '_proxied'):
-                if wellknowntype(val):
-                    self._disable('no-member', node.lineno)
-                    return
                 cls_def = val._proxied  # type: astroid.ClassDef
             elif isinstance(val, astroid.Module):
                 return self._check_module(val, node)  # FIXME: move
