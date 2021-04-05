@@ -1,3 +1,4 @@
+from keyword import iskeyword
 from functools import lru_cache
 from typing import Any, List, Tuple, Set, Dict, Union, MutableMapping, Iterator
 import textwrap
@@ -383,11 +384,13 @@ def _template_message(desc, descriptor_registry):
 
     slots = desc.field_names
 
+    # TODO: refactor field partitioning and iskeyword checks
     # NOTE: the "pass" statement is a hack to provide a body when args is empty
     initialisers = ['pass']
     initialisers += [
         'self.{} = self.{}()  # inner_nonrepeated_fields'.format(field_name, field_type)
         for field_name, field_type in desc.inner_nonrepeated_fields
+        if not iskeyword(field_name)
     ]
 
 
@@ -395,6 +398,7 @@ def _template_message(desc, descriptor_registry):
     initialisers += [
         'self.{} = []  # repeated_fields'.format(field_name)
         for field_name in repeated_scalar_fields
+        if not iskeyword(field_name)
     ]
 
     rcfields = {
@@ -408,6 +412,7 @@ def _template_message(desc, descriptor_registry):
     initialisers += [
         _template_composite_field(desc.name, field_name, field_type, is_nested)
         for field_name, field_type, is_nested in repeated_composite_fields
+        if not iskeyword(field_name)
     ]
 
     # TODO: refactor this
@@ -424,6 +429,7 @@ def _template_message(desc, descriptor_registry):
     initialisers += [
         'self.{} = {}()  # external_fields (siblings)'.format(field_name, field_type)
         for _, field_name, field_type in siblings
+        if not iskeyword(field_name)
     ]
     externals = [
         (f, f.name, _to_module_name(msg_type.file.name), full_name(msg_type))  # TODO: look up name instead of heuristic?
@@ -433,6 +439,7 @@ def _template_message(desc, descriptor_registry):
     initialisers += [
         'self.{} = {}.{}()  # external_fields (imports)'.format(field_name, qualifier, field_type)
         for _, field_name, qualifier, field_type in externals
+        if not iskeyword(field_name)
     ]
 
     # Extensions should show up as attributes on message instances but not
@@ -440,9 +447,10 @@ def _template_message(desc, descriptor_registry):
     initialisers += [
         'self.{} = object()  # extensions'.format(ext_name)
         for ext_name in desc.extensions_by_name
+        if not iskeyword(ext_name)
     ]
 
-    args = ['self'] + ['{}=None'.format(f) for f in slots]
+    args = ['self'] + ['{}=None'.format(f) for f in slots if not iskeyword(f)]
     init_str = 'def __init__({argspec}):\n{initialisers}\n'.format(
         argspec=', '.join(args),
         initialisers=textwrap.indent('\n'.join(initialisers), '    '),

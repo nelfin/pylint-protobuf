@@ -21,6 +21,8 @@
   existing behaviour of other protobuf messages
 - Remove "protobuf-undefined-attribute" on missing top-level module attributes
   since this is better handled by "no-member"
+- Fix errors in module transform caused by field names matching Python
+  reserved keywords (#46). Thanks @AudriusButkevicius for the report
 
 ## [0.19.0] - 2021-03-24
 - Add support for imported message definitions via 'import "foo.proto";'
