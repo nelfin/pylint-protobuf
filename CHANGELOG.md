@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.20.0] - Unreleased
+## [0.20.0] - 2021-04-06
 - Add support for checking arguments to .add() methods of repeated composite
   fields (similar to message constructors)
 - Add support for checking validity of arguments to HasField()/ClearField()
