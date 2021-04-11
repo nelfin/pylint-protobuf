@@ -99,7 +99,7 @@ class TODO(object):
 
 FIELD_TYPES = {
     FieldDescriptor.TYPE_BOOL: bool,
-    FieldDescriptor.TYPE_BYTES: str,
+    FieldDescriptor.TYPE_BYTES: bytes,
     FieldDescriptor.TYPE_DOUBLE: float,
     FieldDescriptor.TYPE_ENUM: int,
     FieldDescriptor.TYPE_FIXED32: float,

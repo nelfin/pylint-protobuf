@@ -110,7 +110,9 @@ def _scalar_typecheck(val, val_type):
     elif val_type is bool:
         return check(val, (float, int, bool))
     elif val_type is str:
-        return check(val, str)
+        return check(val, (str, bytes))
+    elif val_type is bytes:
+        return check(val, bytes)
     else:
         return True  # Are there any other scalar protobuf types?
 

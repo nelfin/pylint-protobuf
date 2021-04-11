@@ -1,5 +1,9 @@
 # pylint-protobuf
 
+## [0.20.1] - Unreleased
+- Fix type checking of bytes fields incorrectly labelled as strings (#48).
+  Thanks @gal-simhi for the report
+
 ## [0.20.0] - 2021-04-06
 - Add support for checking arguments to .add() methods of repeated composite
   fields (similar to message constructors)
