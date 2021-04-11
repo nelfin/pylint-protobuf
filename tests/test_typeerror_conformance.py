@@ -6,10 +6,11 @@ import pylint_protobuf
 
 
 @pytest.mark.parametrize('typenames,py_valid,py_invalid', [
-    (('float', 'float'), [123.0, 123, True], ['str']),
-    (('int32', 'int'),   [123, True], [123.0, 'str']),
-    (('bool', 'bool'),   [123.0, 123, True], ['str']),
-    (('string', 'str'),  ['str'], [123.0, 123, True]),
+    (('float', 'float'), [123.0, 123, True], ['str', b'bytes']),
+    (('int32', 'int'),   [123, True], [123.0, 'str', b'bytes']),
+    (('bool', 'bool'),   [123.0, 123, True], ['str', b'bytes']),
+    (('string', 'str'),  ['str', b'bytes'], [123.0, 123, True]),
+    (('bytes', 'bytes'), [b'bytes'], [123.0, 123, True, 'str']),
 ])
 def test_typeerror_conformance(typenames, py_valid, py_invalid, proto_builder, module_builder, linter_factory):
     pb2_field, pytype = typenames

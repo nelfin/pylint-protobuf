@@ -398,3 +398,26 @@ class TestRepeatedTypeError(CheckerTestCase):
         """.format(repeated_composite_pb2))
         msg = self.type_error_msg(node, 'Inner', 'value', 'str', 123)
         self.assert_adds_messages(node, msg)
+
+
+def test_issue48_bytes_field(proto_builder, module_builder, linter_factory):
+    pb2 = proto_builder("""
+        message Connection {
+            required bytes theres_no_place_like = 1;
+        }
+    """)
+    mod = module_builder(r"""
+        from {pb2} import Connection
+        Connection(theres_no_place_like=b'\x7f\x00\x00\x01')
+        Connection(theres_no_place_like='127.0.0.1')
+    """.format(pb2=pb2), 'issue48_example1')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-undefined-attribute', 'protobuf-type-error'],
+    )
+    linter.check([mod])
+    expected_messages = [
+        pylint_protobuf.MESSAGES['E5903'][0] % ('Connection', 'theres_no_place_like', 'bytes', '127.0.0.1'),
+    ]
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert sorted(actual_messages) == sorted(expected_messages)
