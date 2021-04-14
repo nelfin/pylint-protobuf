@@ -1,8 +1,9 @@
 # pylint-protobuf
 
 ## [0.20.1] - Unreleased
-- Fix type checking of bytes fields incorrectly labelled as strings (#48).
-  Thanks @gal-simhi for the report
+- Fix type checking of bytes fields incorrectly labelled as strings (#48)
+- Fix false-positive unexpected-keyword-arg when arguments are passed as
+  star-expansion (#49). Thanks @gal-simhi for the reports (#48, #49)
 
 ## [0.20.0] - 2021-04-06
 - Add support for checking arguments to .add() methods of repeated composite

@@ -224,7 +224,11 @@ class ProtobufDescriptorChecker(BaseChecker):
         keywords = node.keywords or []
         for kw in keywords:
             arg_name, val_node = kw.arg, kw.value
-            if arg_name not in desc.fields_by_name:
+            if arg_name is None:
+                # If arg_name is None then we are dealing with **kwargs, in which case we don't
+                # really care what arguments are being passed, just ignore them to be safe.
+                continue
+            elif arg_name not in desc.fields_by_name:
                 # This is probably too fragile (should it be replaced by a separate message?)
                 # Also, it's probably not fair to always refer to this as a constructor call, though arguably
                 # .add() on repeated composite fields is "constructing" the sub-message

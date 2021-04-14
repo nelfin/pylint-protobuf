@@ -421,3 +421,23 @@ def test_issue48_bytes_field(proto_builder, module_builder, linter_factory):
     ]
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert sorted(actual_messages) == sorted(expected_messages)
+
+
+def test_issue49_star_kwargs(proto_builder, module_builder, linter_factory):
+    pb2 = proto_builder("""
+        message Policy {
+            optional string tag = 1;
+        }
+    """)
+    mod = module_builder(r"""
+        from {pb2} import Policy
+        kwargs = dict(tag='cool')
+        p = Policy(**kwargs)
+    """.format(pb2=pb2), 'issue49_example1')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-type-error', 'unexpected-keyword-arg'],
+    )
+    linter.check([mod])
+    actual_messages = [m.msg for m in linter.reporter.messages]
+    assert not actual_messages
