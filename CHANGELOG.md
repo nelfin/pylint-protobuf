@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.20.1] - Unreleased
+## [0.20.1] - 2021-04-15
 - Fix type checking of bytes fields incorrectly labelled as strings (#48)
 - Fix false-positive unexpected-keyword-arg when arguments are passed as
   star-expansion (#49). Thanks @gal-simhi for the reports (#48, #49)
