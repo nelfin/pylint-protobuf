@@ -56,25 +56,39 @@ def test_E1123_on_unexpected_kwargs(warnings_mod, linter_factory):
     assert sorted(actual_messages) == sorted(expected_messages)
 
 
-@pytest.fixture
-def posargs_mod(kwarg_mod, module_builder):
-    return module_builder("""
+def test_warn_typeerror_on_positional_args(kwarg_mod, module_builder, linter_factory):
+    mod = module_builder("""
         from {} import Count
         c = Count(0)
     """.format(kwarg_mod), 'posargs_mod')
-
-
-def test_warn_typeerror_on_positional_args(posargs_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
         disable=['all'], enable=['protobuf-no-posargs'],
     )
-    linter.check([posargs_mod])
+    linter.check([mod])
     expected_messages = [
         'Positional arguments are not allowed in message constructors and will raise TypeError'
     ]
     actual_messages = [m.msg for m in linter.reporter.messages]
     assert actual_messages  # to make this XPASS
+    assert sorted(actual_messages) == sorted(expected_messages)
+
+
+def test_warn_starargs_no_posargs(kwarg_mod, module_builder, linter_factory):
+    mod = module_builder("""
+        from {} import Count
+        args = (1, 2, 3)
+        Count(*args)
+    """.format(kwarg_mod), 'starargs_posargs1')
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-no-posargs'],
+    )
+    linter.check([mod])
+    expected_messages = [
+        'Positional arguments are not allowed in message constructors and will raise TypeError'
+    ]
+    actual_messages = [m.msg for m in linter.reporter.messages]
     assert sorted(actual_messages) == sorted(expected_messages)
 
 
