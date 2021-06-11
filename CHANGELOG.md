@@ -1,5 +1,10 @@
 # pylint-protobuf
 
+## [0.20.2] - Unreleased
+
+- Remove runtime dependency on internal protobuf interface (#50). Thanks
+  @dsandbrink for the report.
+
 ## [0.20.1] - 2021-04-15
 - Fix type checking of bytes fields incorrectly labelled as strings (#48)
 - Fix false-positive unexpected-keyword-arg when arguments are passed as

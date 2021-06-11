@@ -6,7 +6,7 @@ import textwrap
 import astroid
 
 try:
-    from google.protobuf.pyext._message import (
+    from google.protobuf.descriptor import (
         Descriptor,
         EnumDescriptor,
         FieldDescriptor,
