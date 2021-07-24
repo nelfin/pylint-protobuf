@@ -536,7 +536,14 @@ def transform_descriptor_to_class(cls):
 def _exec_module(mod):
     # type: (astroid.Module) -> dict
     l = {}
-    exec(mod.as_string(), {}, l)
+    try:
+        exec(mod.as_string(), {}, l)
+    except Exception:
+        # Could raise SyntaxError, KeyError, ImportError etc. Would like to
+        # move away from this approach. Had some troubles previously with
+        # relative imports in a non-package context (see
+        # https://github.com/nelfin/pylint_protobuf/issues/51).
+        pass
     return l
 
 
@@ -563,7 +570,10 @@ def resolve_imports(mod):
 def transform_module(mod):
     # type: (astroid.Module) -> astroid.Module
     for name in mod.wildcard_import_names():
-        cls = mod_node_to_class(mod, name)
+        try:
+            cls = mod_node_to_class(mod, name)
+        except KeyError:
+            continue
         try:
             for local_name, node in transform_descriptor_to_class(cls):
                 node.parent = mod

@@ -4,6 +4,8 @@
 
 - Remove runtime dependency on internal protobuf interface (#50). Thanks
   @dsandbrink for the report.
+- Fix unhandled KeyError in pylint_protobuf.transform (#51). Thanks
+  @hmc-cs-mdrissi for the report.
 
 ## [0.20.1] - 2021-04-15
 - Fix type checking of bytes fields incorrectly labelled as strings (#48)
