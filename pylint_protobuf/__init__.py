@@ -8,6 +8,13 @@ from pylint.interfaces import IAstroidChecker
 from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite, is_repeated, is_oneof
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
+try:
+    from astroid import Index as IndexNode
+except ImportError:
+    # Compatibility shim for astroid >= 2.6
+    class IndexNode(object):
+        pass
+
 _MISSING_IMPORT_IS_ERROR = False
 BASE_ID = 59
 MESSAGES = {
@@ -476,13 +483,17 @@ class ProtobufDescriptorChecker(BaseChecker):
         attr, slice = node.value, node.slice
         if not isinstance(attr, astroid.Attribute) or attr.attrname != 'Extensions':
             return
-        if not isinstance(slice, astroid.Index) or not isinstance(slice.value, astroid.Attribute):
+        if isinstance(slice, IndexNode):  # astroid < 2.6
+            value = slice.value
+        else:
+            value = slice
+        if not isinstance(value, astroid.Attribute):
             return
         target_desc = _get_protobuf_descriptor(attr.expr)
-        ext_desc = _get_protobuf_descriptor(slice.value.expr)
+        ext_desc = _get_protobuf_descriptor(value.expr)
         if target_desc is None:
             return
-        ext_name = slice.value.attrname
+        ext_name = value.attrname
         if ext_desc is not None:
             if ext_name not in ext_desc.extensions_by_name:
                 return  # should raise protobuf-undefined-attribute elsewhere
