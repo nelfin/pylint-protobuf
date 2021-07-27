@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## [0.20.2] - Unreleased
+## [0.20.2] - 2021-07-27
 
 - Remove runtime dependency on internal protobuf interface (#50). Thanks
   @dsandbrink for the report.
