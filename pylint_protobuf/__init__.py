@@ -3,7 +3,6 @@ from typing import Union, Optional, List, Any
 
 import astroid
 from pylint.checkers import BaseChecker, utils
-from pylint.interfaces import IAstroidChecker
 
 from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite, is_repeated, is_oneof
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
@@ -134,7 +133,6 @@ def _resolve_builtin(inst):
 
 
 class ProtobufDescriptorChecker(BaseChecker):
-    __implements__ = IAstroidChecker
     msgs = MESSAGES
     name = 'protobuf-descriptor-checker'
     priority = 0  # need to be higher than builtin typecheck lint
