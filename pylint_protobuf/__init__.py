@@ -134,7 +134,6 @@ def _resolve_builtin(inst):
 
 
 class ProtobufDescriptorChecker(BaseChecker):
-    __implements__ = IAstroidChecker
     msgs = MESSAGES
     name = 'protobuf-descriptor-checker'
     priority = 0  # need to be higher than builtin typecheck lint

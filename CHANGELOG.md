@@ -1,5 +1,10 @@
 # pylint-protobuf
 
+## Unreleased
+
+- Fix for removal of IAstroidChecker in pylint 3.x (#57). Thanks @matejsp,
+  @Cireo, and@jacobtylerwalls
+
 ## [0.20.2] - 2021-07-27
 
 - Remove runtime dependency on internal protobuf interface (#50). Thanks
