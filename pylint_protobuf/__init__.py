@@ -511,6 +511,7 @@ class ProtobufDescriptorChecker(BaseChecker):
 
     def _disable(self, msgid, line, scope='module'):
         try:
+            self.linter.disable("useless-suppression", scope=scope, line=line)
             self.linter.disable(msgid, scope=scope, line=line)
         except AttributeError:
             pass  # might be UnittestLinter
