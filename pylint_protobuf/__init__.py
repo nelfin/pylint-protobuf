@@ -14,6 +14,14 @@ except ImportError:
     class IndexNode(object):
         pass
 
+try:
+    from pylint.checkers.utils import check_messages
+except (ImportError, ModuleNotFoundError):
+    from pylint.checkers.utils import (
+        only_required_for_messages as check_messages
+    )
+
+
 _MISSING_IMPORT_IS_ERROR = False
 BASE_ID = 59
 MESSAGES = {
@@ -166,7 +174,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._check_repeated_composite(node)
         self._check_hasfield(node)
 
-    @utils.check_messages('protobuf-enum-value')
+    @check_messages('protobuf-enum-value')
     def _check_enum_values(self, node):
         if len(node.args) != 1:
             return  # protobuf enum .Value() is only called with one argument
@@ -214,13 +222,13 @@ class ProtobufDescriptorChecker(BaseChecker):
         self._check_posargs(desc, node)
         self._check_kwargs(desc, node)
 
-    @utils.check_messages('protobuf-no-posargs')
+    @check_messages('protobuf-no-posargs')
     def _check_posargs(self, desc, node):
         # type: (Optional[SimpleDescriptor], astroid.Call) -> None
         if desc is not None and len(node.args) > 0:
             self.add_message('protobuf-no-posargs', node=node)
 
-    @utils.check_messages('protobuf-type-error', 'unexpected-keyword-arg')
+    @check_messages('protobuf-type-error', 'unexpected-keyword-arg')
     def _check_kwargs(self, desc, node):
         # type: (Optional[SimpleDescriptor], astroid.Call) -> None
         if desc is None:
@@ -306,7 +314,7 @@ class ProtobufDescriptorChecker(BaseChecker):
                                      args=(desc_name, arg_name, arg_type.__name__, val))
                 break
 
-    @utils.check_messages('protobuf-type-error')
+    @check_messages('protobuf-type-error')
     def _check_repeated_scalar(self, node):
         # type: (astroid.Call) -> None
         if len(node.args) != 1:
@@ -363,7 +371,7 @@ class ProtobufDescriptorChecker(BaseChecker):
         for val in vals:
             check_arg(val)
 
-    @utils.check_messages(
+    @check_messages(
         'protobuf-undefined-attribute',
         'protobuf-no-repeated-membership',
         'protobuf-no-proto3-membership',
@@ -394,12 +402,12 @@ class ProtobufDescriptorChecker(BaseChecker):
                         self.add_message('protobuf-no-proto3-membership', node=node, args=(val.value,))
                         continue
 
-    @utils.check_messages('protobuf-undefined-attribute')
+    @check_messages('protobuf-undefined-attribute')
     def visit_assignattr(self, node):
         # type: (astroid.AssignAttr) -> None
         self._assignattr(node)
 
-    @utils.check_messages('protobuf-undefined-attribute')
+    @check_messages('protobuf-undefined-attribute')
     def visit_attribute(self, node):
         # type: (astroid.Attribute) -> None
         self._assignattr(node)
@@ -443,7 +451,7 @@ class ProtobufDescriptorChecker(BaseChecker):
             self._check_type_error(node, found)
             self._check_no_assign(node, found)
 
-    @utils.check_messages('protobuf-type-error')
+    @check_messages('protobuf-type-error')
     def _check_type_error(self, node, desc):
         # type: (Node, SimpleDescriptor) -> None
         if not isinstance(node, astroid.AssignAttr):
@@ -462,7 +470,7 @@ class ProtobufDescriptorChecker(BaseChecker):
                 self.add_message('protobuf-type-error', node=node, args=(desc.name, attr, type_.__name__, val))
                 break
 
-    @utils.check_messages('protobuf-no-assignment')
+    @check_messages('protobuf-no-assignment')
     def _check_no_assign(self, node, desc):
         # type: (Node, SimpleDescriptor) -> None
         if not isinstance(node, astroid.AssignAttr):
@@ -475,7 +483,7 @@ class ProtobufDescriptorChecker(BaseChecker):
     def visit_subscript(self, node):
         self._check_extension_getitem(node)
 
-    @utils.check_messages('protobuf-wrong-extension-scope')
+    @check_messages('protobuf-wrong-extension-scope')
     def _check_extension_getitem(self, node):
         # type: (astroid.Subscript) -> None
         attr, slice = node.value, node.slice
