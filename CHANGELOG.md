@@ -1,6 +1,6 @@
 # pylint-protobuf
 
-## Unreleased
+## [0.21.0] - 2023-10-06
 
 - Fix for removal of IAstroidChecker in pylint 3.x (#57). Thanks @matejsp,
   @Cireo, and@jacobtylerwalls. Ref pylint-dev/pylint#9094
