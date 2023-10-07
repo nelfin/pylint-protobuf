@@ -8,6 +8,14 @@ from .transform import transform_module, is_some_protobuf_module, to_pytype, is_
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
 
 try:
+    from pylint.interfaces import IAstroidChecker
+except ImportError:
+    # compat shim for astroid 2.x
+    # TODO: remove in pylint-protobuf 1.x after a period of deprecation
+    class IAstroidChecker:
+        pass
+
+try:
     from astroid import Index as IndexNode
 except ImportError:
     # Compatibility shim for astroid >= 2.6
@@ -141,6 +149,7 @@ def _resolve_builtin(inst):
 
 
 class ProtobufDescriptorChecker(BaseChecker):
+    __implements__ = IAstroidChecker
     msgs = MESSAGES
     name = 'protobuf-descriptor-checker'
     priority = 0  # need to be higher than builtin typecheck lint
