@@ -325,7 +325,11 @@ def transform_enum(desc, descriptor_registry):
     cls_def = astroid.extract_node(_template_enum(desc, descriptor_registry))  # type: astroid.ClassDef
 
     cls_def._is_protobuf_class = True
-    simple_desc = descriptor_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
+    # FIXME: guard?
+    if hasattr(cls_def, 'doc_node'):
+        simple_desc = descriptor_registry[cls_def.doc_node.value.split('=')[-1]]
+    else:
+        simple_desc = descriptor_registry[cls_def.doc.split('=')[-1]]
     cls_def._protobuf_descriptor = simple_desc
 
     names = []  # type: List[Tuple[str, astroid.Assign]]
@@ -501,9 +505,12 @@ def transform_message(desc, desc_registry):
     def visit_classdef(cls_def):
         # type: (astroid.ClassDef) -> astroid.ClassDef
         try:
-            simple_desc = desc_registry[cls_def.doc.split('=')[-1]]
+            if hasattr(cls_def, 'doc_node'):
+                simple_desc = desc_registry[cls_def.doc_node.value.split('=')[-1]]
+            else:
+                simple_desc = desc_registry[cls_def.doc.split('=')[-1]]
         except (AttributeError, KeyError):
-            pass # probably a helper class like CompositeContainer
+            pass  # probably a helper class like CompositeContainer
         else:
             cls_def._is_protobuf_class = True
             cls_def._protobuf_descriptor = simple_desc
