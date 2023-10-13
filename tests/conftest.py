@@ -85,7 +85,7 @@ def extract_node(source):
 
 
 def make_message(node, target, attr, message='protobuf-undefined-attribute'):
-    return pylint.testutils.Message(message, node=node, args=(attr, target))
+    return pylint.testutils.MessageTest(message, node=node, args=(attr, target))
 
 
 class CheckerTestCase(pylint.testutils.CheckerTestCase):
@@ -101,7 +101,7 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
         return astroid.extract_node(s)
 
     def make_message(self, msg_id, node, args):
-        return pylint.testutils.Message(msg_id, node=node, args=args)
+        return pylint.testutils.MessageTest(msg_id, node=node, args=args)
 
     undefined_attribute_msg = lambda self, node, *args: self.make_message('protobuf-undefined-attribute', node, args)
     enum_value_msg = lambda self, node, *args: self.make_message('protobuf-enum-value', node, args)

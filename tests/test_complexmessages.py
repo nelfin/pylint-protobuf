@@ -91,7 +91,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         outer = Outer()
         outer.inner.should_warn = 123  #@
         """.format(complexfield_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'Inner')
@@ -132,7 +132,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         p = Person()
         p.primary_alias = Person.Alias(name="Example Fakename")
         """.format(innerclass_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-no-assignment',
             node=node.targets[0], args=('Person', 'primary_alias')
         )
@@ -145,7 +145,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         p = Person()
         p.primary_alias.should_warn = 123  #@
         """.format(innerclass_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'Alias')
@@ -159,7 +159,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         a = A()
         a.b_mutual.a_mutual.should_warn = 123  #@
         """.format(mutual_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'A')
@@ -173,7 +173,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         pref = UserFavourite()
         pref.favourite.should_warn = 123  #@
         """.format(extern_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'Identifier')
@@ -188,7 +188,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         o.double_nested.value = 'a_string'
         o.double_nested.should_warn = 'a_string'
         """.format(double_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'Innermost')
@@ -203,7 +203,7 @@ class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
         o.inner.value = 'a_string'
         o.inner.should_warn = 'a_string'
         """.format(no_package_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0],
             args=('should_warn', 'Inner')

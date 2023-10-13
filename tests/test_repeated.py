@@ -60,7 +60,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {repeated}.Repeated()
             msg.values = ["abc", "def"]
         """.format(repeated=repeated_scalar_mod))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-no-assignment',
             node=node.targets[0], args=('Repeated', 'values')
         )
@@ -74,7 +74,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {repeated}.Repeated()
             msg.values = [123, 456]
         """.format(repeated=repeated_scalar_mod))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-no-assignment',
             node=node.targets[0], args=('Repeated', 'values')
         )
@@ -88,7 +88,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {repeated}.Repeated()
             msg.values = 123
         """.format(repeated=repeated_scalar_mod))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-no-assignment',
             node=node.targets[0], args=('Repeated', 'values')
         )
@@ -102,7 +102,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {repeated}.Repeated()
             msg.values.append(123)
         """.format(repeated=repeated_scalar_mod))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
@@ -124,11 +124,11 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {mod}.Repeated()
             msg.values.extend([123, 456])
         """.format(mod=repeated_scalar_mod))
-        m1 = pylint.testutils.Message(
+        m1 = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
-        m2 = pylint.testutils.Message(
+        m2 = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 456)
         )
@@ -142,7 +142,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             vals = [123]
             msg.values.extend(vals)
         """.format(mod=repeated_scalar_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
@@ -223,7 +223,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             v = msg.values
             v.append(123)
         """.format(mod=repeated_scalar_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
@@ -236,7 +236,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {mod}.Repeated()
             msg.other.append(123)
         """.format(mod=repeated_scalar_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.func.expr, args=('other', 'Repeated')
         )
@@ -251,7 +251,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         inner = outer.values.add()
         inner.invalid_field = 123  #@
         """.format(repeated=repeated_composite_mod))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Inner')
         )
@@ -266,7 +266,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         inner = outer.values.add()
         inner.invalid_field = 123  #@
         """.format(repeated=repeated_external_composite_mod))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Inner')
         )

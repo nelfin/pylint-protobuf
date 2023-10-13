@@ -38,7 +38,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         p = {first}.Person()
         p.should_warn = 123
         """.format(first=first_alias, second=second_alias))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -52,7 +52,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         p = Person()
         p.should_warn = 123
         """.format(first=first_alias, second=second_alias))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -80,7 +80,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         outer = Foo()
         outer.should_warn = 123  #@
         """.format(fake_pb2=fake_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=outer.targets[0], args=('should_warn', 'Foo')
         )
@@ -106,7 +106,7 @@ class TestNestedScopes(pylint.testutils.CheckerTestCase):
         outer = Foo()
         outer.should_warn = 123  #@
         """.format(fake_pb2=fake_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=outer.targets[0], args=('should_warn', 'Foo')
         )

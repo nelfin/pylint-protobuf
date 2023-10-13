@@ -29,7 +29,7 @@ class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
             code = 123
             p.name = code
         """.format(person_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node.targets[0], args=('Person', 'name', 'str', 123)
         )
@@ -50,7 +50,7 @@ class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
             from {} import Person
             Person(code=int)
         """.format(person_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Person', 'code', 'int', 'int()')
         )
@@ -62,7 +62,7 @@ class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
             from {} import Person
             Person(fraction=float)
         """.format(person_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Person', 'fraction', 'float', 'float()')
         )
@@ -82,7 +82,7 @@ class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
             from {} import Person
             Person(code=123.0)
         """.format(person_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node, args=('Person', 'code', 'int', 123.0)
         )
@@ -128,7 +128,7 @@ class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
             p = Person()
             p.code = None
         """.format(person_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node.targets[0], args=('Person', 'code', 'int', None)
         )

@@ -50,7 +50,7 @@ class TestProtobufOneofFields(pylint.testutils.CheckerTestCase):
             msg = {mod}.CompositeOneof()
             msg.name = msg.Name(name="Person")
         """.format(mod=oneof_composite_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-no-assignment',
             node=node.targets[0], args=('CompositeOneof', 'name')
         )
@@ -63,7 +63,7 @@ class TestProtobufOneofFields(pylint.testutils.CheckerTestCase):
             msg = {mod}.CompositeOneof()
             msg.name = 'Example'
         """.format(mod=oneof_composite_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-no-assignment',
             node=node.targets[0], args=('CompositeOneof', 'name')
         )
@@ -78,7 +78,7 @@ class TestProtobufOneofFields(pylint.testutils.CheckerTestCase):
             msg.email.email = 'hello@example.com'   # should not warn
             msg.name.should_warn = 123
         """.format(mod=oneof_composite_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Name')
         )

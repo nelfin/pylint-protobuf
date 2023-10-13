@@ -101,7 +101,7 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
             from google.protobuf.{module} import {wkt}
             {wkt}(should_warn=123)
         """.format(module=module, wkt=wkt))
-        msg = pylint.testutils.Message('unexpected-keyword-arg', node=node, args=('should_warn', 'constructor'))
+        msg = pylint.testutils.MessageTest('unexpected-keyword-arg', node=node, args=('should_warn', 'constructor'))
         with self.assertAddsMessages(msg):
             self.walk(node.root())
 

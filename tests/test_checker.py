@@ -81,7 +81,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = person_pb2.Person()
         foo.should_warn  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node, args=('should_warn', 'Person')
         )
@@ -94,7 +94,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = Person()
         foo.should_warn  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node, args=('should_warn', 'Person')
         )
@@ -134,7 +134,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo: Person = person_pb2.Person()
         foo.should_warn: int = 123  #@
         """)  # type: astroid.AnnAssign
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.target, args=('should_warn', 'Person')
         )
@@ -148,7 +148,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = person_pb2.Person()
         foo.invalid_field = 'should warn'  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Person')
         )
@@ -164,7 +164,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo: Person = person_pb2.Person()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -180,7 +180,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = person_pb2.Person()
         foo.should_warn: int = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.target, args=('should_warn', 'Person')
         )
@@ -194,7 +194,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = person.Person()
         foo.invalid_field = 'should warn'  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Person')
         )
@@ -208,7 +208,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = person_pb2.Person()
         foo.invalid_field = 'should warn'  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Person')
         )
@@ -222,7 +222,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = Foo()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -239,7 +239,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         bar = Bar()
         bar.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -253,7 +253,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         bar = Foo()
         bar.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -289,7 +289,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = bar[0]()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -307,7 +307,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = bar['baz']()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -334,7 +334,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = bar[0][0]()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -349,7 +349,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = Indirect()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -364,7 +364,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         bar = foo
         bar.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -378,7 +378,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         baz = bar = Foo()
         baz.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -394,11 +394,11 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo.should_warn = bar.should_also_warn = 123  #@
         """)
         messages = [
-            pylint.testutils.Message(
+            pylint.testutils.MessageTest(
                 'protobuf-undefined-attribute',
                 node=node.targets[0], args=('should_warn', 'Foo')
             ),
-            pylint.testutils.Message(
+            pylint.testutils.MessageTest(
                 'protobuf-undefined-attribute',
                 node=node.targets[1], args=('should_also_warn', 'Foo')
             ),
@@ -417,7 +417,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
 
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -433,7 +433,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo = baz[0]()
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -447,7 +447,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         foo, bar = Foo(), 'bar'
         foo.should_warn = 123  #@
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
@@ -517,7 +517,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         p = {mod}.Person()
         p.should_warn = 123
         """.format(mod=innerclass_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -530,7 +530,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         p = foo.Person()
         p.should_warn = 123
         """.format(mod=innerclass_pb2))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -549,7 +549,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         p = foo.Person()
         p.should_warn = 123
         """.format(pb2_package))
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -563,7 +563,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         p = person_pb2.Person()
         p.should_warn = 123
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
@@ -576,7 +576,7 @@ class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
         p = person_pb2.Person()
         p.name = 123
         """)
-        message = pylint.testutils.Message(
+        message = pylint.testutils.MessageTest(
             'protobuf-type-error',
             node=node.targets[0], args=('Person', 'name', 'str', 123)
         )

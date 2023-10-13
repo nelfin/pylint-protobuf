@@ -124,7 +124,7 @@ class TestEnumDefinitions(CheckerTestCase):
         from {} import Variable
         Variable.Value('should_warn')  #@
         """.format(enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=('should_warn', 'Variable')
         )
@@ -136,7 +136,7 @@ class TestEnumDefinitions(CheckerTestCase):
         a = 'should_warn'
         Variable.Value(a)
         """.format(enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=('should_warn', 'Variable')
         )
@@ -157,7 +157,7 @@ class TestEnumDefinitions(CheckerTestCase):
         func = Variable.Value
         func('should_warn')
         """.format(enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=('should_warn', 'Variable')
         )
@@ -177,7 +177,7 @@ class TestEnumDefinitions(CheckerTestCase):
         from {} import Message
         Message.Inner.Value('should_warn')
         """.format(nested_enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=('should_warn', 'Inner')
         )
@@ -254,7 +254,7 @@ class TestEnumDefinitions(CheckerTestCase):
             from {} import Variable
             Variable.Name(123)
         """.format(enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=(123, 'Variable')
         )
@@ -265,7 +265,7 @@ class TestEnumDefinitions(CheckerTestCase):
             from {} import Variable
             Variable.Name('CONTINUOUS')
         """.format(enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=('CONTINUOUS', 'Variable')
         )
@@ -277,7 +277,7 @@ class TestEnumDefinitions(CheckerTestCase):
             b = 123
             Variable.Name(b)
         """.format(enum_mod))
-        msg = pylint.testutils.Message(
+        msg = pylint.testutils.MessageTest(
             'protobuf-enum-value',
             node=node, args=(123, 'Variable')
         )
