@@ -23,11 +23,11 @@ except ImportError:
         pass
 
 try:
-    from pylint.checkers.utils import check_messages
-except (ImportError, ModuleNotFoundError):
     from pylint.checkers.utils import (
         only_required_for_messages as check_messages
     )
+except (ImportError, ModuleNotFoundError):
+    from pylint.checkers.utils import check_messages
 
 
 _MISSING_IMPORT_IS_ERROR = False
