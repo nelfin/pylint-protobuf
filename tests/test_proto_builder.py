@@ -1,9 +1,8 @@
 import astroid
-import pylint.testutils
 import pytest
 
 import pylint_protobuf
-from tests._testsupport import make_message
+from tests._testsupport import make_message, CheckerTestCase
 
 
 def test_inline_proto_compilation(proto_builder):
@@ -29,7 +28,7 @@ def foo_mod(proto_builder):
     """, 'foo')
 
 
-class TestAutoBuilder(pylint.testutils.CheckerTestCase):
+class TestAutoBuilder(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_missing_field(self, foo_mod):

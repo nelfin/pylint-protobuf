@@ -5,6 +5,7 @@ import astroid
 import pylint.testutils
 
 import pylint_protobuf
+from tests._testsupport import CheckerTestCase
 
 
 @pytest.fixture
@@ -54,7 +55,7 @@ def person_pb2(proto_builder):
     """, 'person')
 
 
-class TestProtobufDescriptorChecker(pylint.testutils.CheckerTestCase):
+class TestProtobufDescriptorChecker(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_unaliased_module_happy_path_should_not_warn(self, person_pb2):

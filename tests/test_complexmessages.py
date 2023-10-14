@@ -3,6 +3,8 @@ import astroid
 import pylint.testutils
 
 import pylint_protobuf
+from tests._testsupport import CheckerTestCase
+
 
 @pytest.fixture
 def complexfield_pb2(proto_builder):
@@ -82,7 +84,7 @@ def no_package_pb2(proto_builder):
         }
     """, preamble=preamble)
 
-class TestComplexMessageDefinitions(pylint.testutils.CheckerTestCase):
+class TestComplexMessageDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_complex_field(self, complexfield_pb2):

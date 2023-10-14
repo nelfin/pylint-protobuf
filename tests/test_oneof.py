@@ -3,6 +3,8 @@ import astroid
 import pylint.testutils
 
 import pylint_protobuf
+from tests._testsupport import CheckerTestCase
+
 
 @pytest.fixture
 def oneof_scalar_pb2(proto_builder):
@@ -32,7 +34,7 @@ def oneof_composite_pb2(proto_builder):
         }
     """)
 
-class TestProtobufOneofFields(pylint.testutils.CheckerTestCase):
+class TestProtobufOneofFields(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_no_oneof_warnings(self, oneof_scalar_pb2):

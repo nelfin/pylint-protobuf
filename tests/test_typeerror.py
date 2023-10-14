@@ -19,7 +19,7 @@ def person_pb2(proto_builder):
     """)
 
 
-class TestSimpleTypeError(pylint.testutils.CheckerTestCase):
+class TestSimpleTypeError(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_inferred_assignattr_warns(self, person_pb2):

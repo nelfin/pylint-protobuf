@@ -3,7 +3,7 @@ import textwrap
 import pytest
 import astroid
 import pylint.testutils
-from tests._testsupport import make_message
+from tests._testsupport import make_message, CheckerTestCase
 
 import pylint_protobuf
 
@@ -59,7 +59,7 @@ SAMPLE_WKTS = [
 ]
 
 
-class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
+class TestWellKnownTypes(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)

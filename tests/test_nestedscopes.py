@@ -3,6 +3,8 @@ import astroid
 import pylint.testutils
 
 import pylint_protobuf
+from tests._testsupport import CheckerTestCase
+
 
 @pytest.fixture
 def fake_pb2(proto_builder):
@@ -28,7 +30,7 @@ def second_alias(proto_builder):
         }
     """)
 
-class TestNestedScopes(pylint.testutils.CheckerTestCase):
+class TestNestedScopes(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_many_imports_no_aliasing(self, first_alias, second_alias):
