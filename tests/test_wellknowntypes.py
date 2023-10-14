@@ -3,7 +3,7 @@ import textwrap
 import pytest
 import astroid
 import pylint.testutils
-from conftest import make_message
+from tests._testsupport import make_message
 
 import pylint_protobuf
 

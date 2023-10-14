@@ -2,7 +2,7 @@ import pytest
 import astroid
 import pylint.testutils
 
-from conftest import CheckerTestCase
+from tests._testsupport import CheckerTestCase
 import pylint_protobuf
 
 

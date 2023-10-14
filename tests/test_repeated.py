@@ -3,7 +3,7 @@ import astroid
 import pylint.testutils
 import pylint.checkers.typecheck
 
-from conftest import CheckerTestCase
+from tests._testsupport import CheckerTestCase
 
 import pylint_protobuf
 

@@ -4,7 +4,7 @@ import pytest
 import pylint.testutils
 
 import pylint_protobuf
-from conftest import CheckerTestCase, extract_node, make_message
+from tests._testsupport import extract_node, make_message, CheckerTestCase
 
 
 @pytest.fixture

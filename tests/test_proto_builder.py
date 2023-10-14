@@ -3,7 +3,7 @@ import pylint.testutils
 import pytest
 
 import pylint_protobuf
-from conftest import make_message
+from tests._testsupport import make_message
 
 
 def test_inline_proto_compilation(proto_builder):

@@ -1,7 +1,7 @@
 import pytest
 
 import pylint_protobuf
-from conftest import CheckerTestCase
+from tests._testsupport import CheckerTestCase
 
 
 @pytest.fixture
