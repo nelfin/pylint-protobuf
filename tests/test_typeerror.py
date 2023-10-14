@@ -1,9 +1,8 @@
-import pytest
-import astroid
 import pylint.testutils
+import pytest
 
-from tests._testsupport import CheckerTestCase
 import pylint_protobuf
+from tests._testsupport import CheckerTestCase
 
 
 @pytest.fixture
@@ -23,7 +22,7 @@ class TestSimpleTypeError(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_inferred_assignattr_warns(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             p = Person()
             code = 123
@@ -36,7 +35,7 @@ class TestSimpleTypeError(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_uninferable_assignattr_no_warn(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             p = Person()
             p.name = get_user_name()
@@ -44,7 +43,7 @@ class TestSimpleTypeError(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_issue40_type_constructor_warns(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(code=int)
         """.format(person_pb2))
@@ -55,7 +54,7 @@ class TestSimpleTypeError(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_issue40_float_constructor_warns(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(fraction=float)
         """.format(person_pb2))
@@ -66,14 +65,14 @@ class TestSimpleTypeError(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_issue40_int_constructor_no_warn(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(code=int('1'))
         """.format(person_pb2))
         self.assert_no_messages(node)
 
     def test_issue40_int_from_float_warns(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(code=123.0)
         """.format(person_pb2))
@@ -84,21 +83,21 @@ class TestSimpleTypeError(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_issue41_float_from_float_no_warn(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(fraction=123.0)
         """.format(person_pb2))
         self.assert_no_messages(node)
 
     def test_issue41_float_from_int_no_warn(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(fraction=123)
         """.format(person_pb2))
         self.assert_no_messages(node)
 
     def test_issue41_float_from_int_constructor_no_warn(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             p = Person(fraction=int('123'))
         """.format(person_pb2))
@@ -106,14 +105,14 @@ class TestSimpleTypeError(CheckerTestCase):
 
     def test_issue42_kwargs_none_should_not_warn(self, person_pb2):
         # It's silly, but true
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             Person(code=None)
         """.format(person_pb2))
         self.assert_no_messages(node)
 
     def test_issue42_assignattr_none_should_warn(self, person_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import Person
             p = Person()
             p.code = None
@@ -329,7 +328,7 @@ class TestRepeatedTypeError(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_issue43_no_typeerror_on_repeated_scalar_no_warn(self, repeated_scalar_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedScalar
             RepeatedScalar(values=['abc', '123'])
         """.format(repeated_scalar_pb2))
@@ -337,14 +336,14 @@ class TestRepeatedTypeError(CheckerTestCase):
 
     @pytest.mark.skip(reason='passes spuriously, iterators are uninferable')
     def test_issue43_no_typeerror_on_iter_no_warn(self, repeated_scalar_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedScalar
             RepeatedScalar(values=map(str, range(3)))
         """.format(repeated_scalar_pb2))
         self.assert_no_messages(node)
 
     def test_issue43_typeerror_on_repeated_scalar_warns(self, repeated_scalar_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedScalar
             RepeatedScalar(values=[123])
         """.format(repeated_scalar_pb2))
@@ -353,7 +352,7 @@ class TestRepeatedTypeError(CheckerTestCase):
 
     @pytest.mark.skip(reason='iterators are uninferable')
     def test_issue43_typeerror_on_iter_repeated_scalar_warns(self, repeated_scalar_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedScalar
             RepeatedScalar(values=iter([123]))
         """.format(repeated_scalar_pb2))
@@ -361,7 +360,7 @@ class TestRepeatedTypeError(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_issue43_no_typeerror_on_repeated_composite_no_warn(self, repeated_composite_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedMessage
             RepeatedMessage(values=[
                 RepeatedMessage.Inner(value='abc'),
@@ -371,7 +370,7 @@ class TestRepeatedTypeError(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_issue43_typeerror_on_repeated_composite_warns(self, repeated_composite_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedMessage
             RepeatedMessage(values=['abc'])
         """.format(repeated_composite_pb2))
@@ -379,7 +378,7 @@ class TestRepeatedTypeError(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_issue43_typeerror_on_inner_warns(self, repeated_composite_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from {} import RepeatedMessage
             RepeatedMessage(values=[
                 RepeatedMessage.Inner(value=123),  #@

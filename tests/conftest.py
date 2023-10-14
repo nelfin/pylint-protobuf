@@ -3,13 +3,15 @@ import sys
 import textwrap
 from subprocess import check_call
 
+import google.protobuf.descriptor_pool
+import google.protobuf.pyext._message
 import pytest
 from pylint import checkers
 from pylint.lint import PyLinter
 from pylint.testutils import MinimalTestReporter
 
 import pylint_protobuf
-import google.protobuf.pyext._message, google.protobuf.descriptor_pool
+
 
 @pytest.fixture(autouse=True)
 def error_on_missing_modules(request):

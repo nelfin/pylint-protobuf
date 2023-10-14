@@ -1,4 +1,3 @@
-import astroid
 import pytest
 
 import pylint_protobuf
@@ -11,7 +10,7 @@ def test_inline_proto_compilation(proto_builder):
       required int32 id = 1;
     }
     """)
-    node = astroid.extract_node("""
+    node = CheckerTestCase.extract_node("""
     import {} as mod
     foo = mod.Person()
     foo.missing = 123
@@ -32,7 +31,7 @@ class TestAutoBuilder(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_missing_field(self, foo_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         import {} as mod
         foo = mod.Foo()
         foo.should_warn

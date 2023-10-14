@@ -1,5 +1,4 @@
 import pytest
-import pylint.checkers.typecheck
 
 import pylint_protobuf
 

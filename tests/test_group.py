@@ -14,11 +14,12 @@ class TestGroupFields(CheckerTestCase):
                 }
             }
         """)
-        node = self.extract_node("""
+        s = """
             from {} import NonRepeatedGroup
             group = NonRepeatedGroup()
             group.result.url = 123
-        """.format(group_pb2))
+        """.format(group_pb2)
+        node = self.extract_node(s)
         msg = self.type_error_msg(node.targets[0], 'Result', 'url', 'str', 123)
         self.assert_adds_messages(node, msg)
 
@@ -31,11 +32,12 @@ class TestGroupFields(CheckerTestCase):
                 }
             }
         """)
-        node = self.extract_node("""
+        s = """
             from {} import RepeatedGroup
             group = RepeatedGroup()
             result = group.result.add()
             result.should_warn = 123
-        """.format(group_pb2))
+        """.format(group_pb2)
+        node = self.extract_node(s)
         msg = self.undefined_attribute_msg(node.targets[0], 'should_warn', 'Result')
         self.assert_adds_messages(node, msg)

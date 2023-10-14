@@ -1,6 +1,5 @@
-import pytest
-import astroid
 import pylint.testutils
+import pytest
 
 import pylint_protobuf
 from tests._testsupport import CheckerTestCase
@@ -88,7 +87,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_complex_field(self, complexfield_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Outer
         outer = Outer()
         outer.inner.should_warn = 123  #@
@@ -101,7 +100,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_complex_field_no_warnings(self, complexfield_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Outer
         outer = Outer()
         outer.inner.value = 'a_string'
@@ -109,7 +108,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_issue12_field_defaults_no_errors(self, complexfield_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Inner
         a = Inner()
         b = a.value
@@ -117,7 +116,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_inner_class_no_warnings(self, innerclass_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Person
         p = Person()
         p.primary_alias.name = "Example Fakename"  #@
@@ -125,7 +124,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_inner_class_no_assignment(self, innerclass_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Person
         p = Person()
         p.primary_alias = Person.Alias(name="Example Fakename")
@@ -137,7 +136,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_inner_class_warns(self, innerclass_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Person
         p = Person()
         p.primary_alias.should_warn = 123  #@
@@ -150,7 +149,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_mutually_recursive_warns(self, mutual_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import A
         a = A()
         a.b_mutual.a_mutual.should_warn = 123  #@
@@ -163,7 +162,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_external_nested_class_warns(self, extern_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import UserFavourite
         pref = UserFavourite()
         pref.favourite.should_warn = 123  #@
@@ -176,7 +175,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_double_nested_class_warns(self, double_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import Outer
         o = Outer()
         o.double_nested.value = 'a_string'
@@ -190,7 +189,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_no_toplevel_package_no_error(self, no_package_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {} import GloballyUniqueUsingExternMessage
         o = GloballyUniqueUsingExternMessage()
         o.inner.value = 'a_string'

@@ -1,5 +1,3 @@
-import os.path
-
 import pytest
 
 import pylint_protobuf

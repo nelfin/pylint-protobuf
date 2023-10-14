@@ -2,10 +2,6 @@ import astroid
 import pylint.testutils
 
 
-def extract_node(source):
-    return astroid.extract_node(source)
-
-
 def make_message(message, node, target, attr):
     return pylint.testutils.MessageTest(message, node=node, args=(attr, target))
 
@@ -19,8 +15,9 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
         with self.assertAddsMessages(*msg):
             self.walk(node.root())
 
-    def extract_node(self, s):
-        return astroid.extract_node(s)
+    @staticmethod
+    def extract_node(source):
+        return astroid.extract_node(source)
 
     def make_message(self, msg_id, node, args):
         return pylint.testutils.MessageTest(msg_id, node=node, args=args)

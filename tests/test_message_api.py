@@ -31,11 +31,12 @@ class TestMessageApiProto2(CheckerTestCase):
         ('example.inner', 'should_warn', 'protobuf-undefined-attribute', ('should_warn', 'Inner')),  # no such field
     ])
     def test_hasfield(self, field, field_to_check, message_id, message_args, proto2_example):
-        node = self.extract_node("""
+        s = """
             from {} import Example
             example = Example()
             {}.HasField({!r})
-        """.format(proto2_example, field, field_to_check))
+        """.format(proto2_example, field, field_to_check)
+        node = self.extract_node(s)
         if message_id is None:
             self.assert_no_messages(node)
         else:
@@ -52,11 +53,12 @@ class TestMessageApiProto2(CheckerTestCase):
         ('example.inner', 'should_warn', 'protobuf-undefined-attribute', ('should_warn', 'Inner')),  # no such field
     ])
     def test_clearfield(self, field, field_to_check, message_id, message_args, proto2_example):
-        node = self.extract_node("""
+        s = """
             from {} import Example
             example = Example()
             {}.ClearField({!r})
-        """.format(proto2_example, field, field_to_check))
+        """.format(proto2_example, field, field_to_check)
+        node = self.extract_node(s)
         if message_id is None:
             self.assert_no_messages(node)
         else:
@@ -103,11 +105,12 @@ class TestMessageApiProto3(CheckerTestCase):
         #   File "proto3_hasfield.py", line 3, in <module>
         #     assert e.HasField('count')  # will raise ValueError
         # ValueError: Can't test non-optional, non-submessage field "Example.value" for presence in proto3.
-        node = self.extract_node("""
+        s = """
                 from {} import Example
                 example = Example()
                 {}.HasField({!r})
-            """.format(proto3_example, field, field_to_check))
+            """.format(proto3_example, field, field_to_check)
+        node = self.extract_node(s)
         if message_id is None:
             self.assert_no_messages(node)
         else:
@@ -124,11 +127,12 @@ class TestMessageApiProto3(CheckerTestCase):
         ('example.inner', 'should_warn', 'protobuf-undefined-attribute', ('should_warn', 'Inner')),  # no such field
     ])
     def test_clearfield(self, field, field_to_check, message_id, message_args, proto3_example):
-        node = self.extract_node("""
+        s = """
                 from {} import Example
                 example = Example()
                 {}.ClearField({!r})
-            """.format(proto3_example, field, field_to_check))
+            """.format(proto3_example, field, field_to_check)
+        node = self.extract_node(s)
         if message_id is None:
             self.assert_no_messages(node)
         else:

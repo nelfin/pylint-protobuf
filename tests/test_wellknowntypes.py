@@ -1,11 +1,10 @@
 import textwrap
 
-import pytest
-import astroid
 import pylint.testutils
-from tests._testsupport import make_message, CheckerTestCase
+import pytest
 
 import pylint_protobuf
+from tests._testsupport import make_message, CheckerTestCase
 
 SAMPLE_WKTS = [
     ('any_pb2', 'Any', ['Pack', 'Unpack', 'TypeName', 'Is']),
@@ -65,7 +64,7 @@ class TestWellKnownTypes(CheckerTestCase):
     @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
     def test_import_wkt_no_warnings(self, module, wkt, fields, error_on_missing_modules):
         for field in fields:
-            node = astroid.extract_node("""
+            node = self.extract_node("""
             from google.protobuf.{module} import {wkt}
             t = {wkt}()
             t.{field}()
@@ -75,7 +74,7 @@ class TestWellKnownTypes(CheckerTestCase):
     @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
     def test_import_wkt_as_module_no_warnings(self, module, wkt, fields, error_on_missing_modules):
         for field in fields:
-            node = astroid.extract_node("""
+            node = self.extract_node("""
             from google.protobuf import {module}
             t = {module}.{wkt}()
             t.{field}()
@@ -84,7 +83,7 @@ class TestWellKnownTypes(CheckerTestCase):
 
     @pytest.mark.parametrize("module,wkt,_", SAMPLE_WKTS)
     def test_wkt_should_still_warn(self, module, wkt, _, error_on_missing_modules):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from google.protobuf.{module} import {wkt}
             t = {wkt}()
             t.should_warn = 123
@@ -94,7 +93,7 @@ class TestWellKnownTypes(CheckerTestCase):
 
     @pytest.mark.parametrize("module,wkt,_", SAMPLE_WKTS)
     def test_wkt_kwargs_should_still_warn(self, module, wkt, _, error_on_missing_modules):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             from google.protobuf.{module} import {wkt}
             {wkt}(should_warn=123)
         """.format(module=module, wkt=wkt))

@@ -1,8 +1,8 @@
 from contextlib import contextmanager
 
-import pytest
 import astroid
 import pylint.checkers.typecheck
+import pytest
 
 import pylint_protobuf
 from pylint_protobuf.transform import transform_module, is_some_protobuf_module

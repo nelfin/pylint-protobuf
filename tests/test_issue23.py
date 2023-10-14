@@ -1,7 +1,7 @@
 import pytest
 
 import pylint_protobuf
-from tests._testsupport import extract_node, make_message, CheckerTestCase
+from tests._testsupport import make_message, CheckerTestCase
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ class TestReexportedNames(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_reexported_protobuf_message_definition_warns(self, outer_mod):
-        node = extract_node("""
+        node = self.extract_node("""
             import outer
             t = outer.Test()
             t.should_warn = 123  #@

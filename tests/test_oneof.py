@@ -1,6 +1,5 @@
-import pytest
-import astroid
 import pylint.testutils
+import pytest
 
 import pylint_protobuf
 from tests._testsupport import CheckerTestCase
@@ -38,7 +37,7 @@ class TestProtobufOneofFields(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_no_oneof_warnings(self, oneof_scalar_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.ScalarOneof()
             msg.code = 123  # should not raise
@@ -46,7 +45,7 @@ class TestProtobufOneofFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_assignment_to_composite_field(self, oneof_composite_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.CompositeOneof()
             msg.name = msg.Name(name="Person")
@@ -58,7 +57,7 @@ class TestProtobufOneofFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_scalar_assignment_to_composite_field(self, oneof_composite_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.CompositeOneof()
             msg.name = 'Example'
@@ -70,7 +69,7 @@ class TestProtobufOneofFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_composite_field_warnings(self, oneof_composite_pb2):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.CompositeOneof()
             msg.name.name = 'Person'                # should not warn

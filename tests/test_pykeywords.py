@@ -1,5 +1,7 @@
 import keyword
+
 import pytest
+
 import pylint_protobuf
 
 

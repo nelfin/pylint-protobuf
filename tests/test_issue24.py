@@ -1,7 +1,7 @@
 import pytest
 
 import pylint_protobuf
-from tests._testsupport import extract_node, CheckerTestCase
+from tests._testsupport import CheckerTestCase
 
 
 @pytest.fixture
@@ -35,13 +35,13 @@ class TestNestedMessages(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_nested_message_definition_does_not_warn(self, nested_mod):
-        self.assert_no_messages(extract_node("""
+        self.assert_no_messages(self.extract_node("""
             from {} import Outer
             inner = Outer.Inner(inner_field='foo')  #@
         """.format(nested_mod)))
 
     def test_nested_message_with_unrelated_enum_does_not_warn(self, nested_plus_enum_mod):
-        self.assert_no_messages(extract_node("""
+        self.assert_no_messages(self.extract_node("""
             from {} import Outer
             inner = Outer.Inner(inner_field='foo')  #@
         """.format(nested_plus_enum_mod)))

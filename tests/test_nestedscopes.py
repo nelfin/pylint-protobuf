@@ -1,6 +1,5 @@
-import pytest
-import astroid
 import pylint.testutils
+import pytest
 
 import pylint_protobuf
 from tests._testsupport import CheckerTestCase
@@ -34,7 +33,7 @@ class TestNestedScopes(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_many_imports_no_aliasing(self, first_alias, second_alias):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         import {first}
         import {second}
         p = {first}.Person()
@@ -47,7 +46,7 @@ class TestNestedScopes(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_many_imports_with_aliasing(self, first_alias, second_alias):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         from {first} import Person
         from {second} import Person
         p = Person()
@@ -61,7 +60,7 @@ class TestNestedScopes(CheckerTestCase):
 
     @pytest.mark.xfail(reason='actually this was an incorrect assumption, Foo is in the global scope')
     def test_aliasing_by_inner_class_does_not_warn(self, fake_pb2, error_on_missing_modules):
-        inner = astroid.extract_node("""
+        inner = self.extract_node("""
         from {fake_pb2} import Foo
         class Outer:
             class Foo: pass
@@ -72,7 +71,7 @@ class TestNestedScopes(CheckerTestCase):
         self.assert_no_messages(inner)
 
     def test_class_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
-        outer = astroid.extract_node("""
+        outer = self.extract_node("""
         from {fake_pb2} import Foo
         class Outer:
             Foo = object
@@ -86,7 +85,7 @@ class TestNestedScopes(CheckerTestCase):
         self.assert_adds_messages(outer, message)
 
     def test_alias_by_function_scope_does_not_warn(self, fake_pb2, error_on_missing_modules):
-        inner = astroid.extract_node("""
+        inner = self.extract_node("""
         from {fake_pb2} import Foo
         def func():
             class Foo: pass
@@ -96,7 +95,7 @@ class TestNestedScopes(CheckerTestCase):
         self.assert_no_messages(inner)
 
     def test_function_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
-        outer = astroid.extract_node("""
+        outer = self.extract_node("""
         from {fake_pb2} import Foo
         def func():
             Foo = object

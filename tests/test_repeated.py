@@ -1,11 +1,10 @@
-import pytest
-import astroid
-import pylint.testutils
 import pylint.checkers.typecheck
-
-from tests._testsupport import CheckerTestCase
+import pylint.testutils
+import pytest
 
 import pylint_protobuf
+from tests._testsupport import CheckerTestCase
+
 
 @pytest.fixture
 def repeated_scalar_mod(proto_builder):
@@ -44,7 +43,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_no_warnings(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {repeated}
 
             msg = {repeated}.Repeated()
@@ -53,7 +52,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_repeated_attrassign(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {repeated}
 
             msg = {repeated}.Repeated()
@@ -66,7 +65,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_repeated_attrassign_no_typeerror(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {repeated}
 
             msg = {repeated}.Repeated()
@@ -79,7 +78,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_repeated_scalar_assign_no_typeerror(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {repeated}
 
             msg = {repeated}.Repeated()
@@ -92,7 +91,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_scalar_typeerror(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {repeated}
 
             msg = {repeated}.Repeated()
@@ -105,7 +104,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_scalar_append_bad_usage_no_error(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             msg.values.append(123, 456)
@@ -113,7 +112,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_scalar_extend_warns_on_each(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             msg.values.extend([123, 456])
@@ -129,7 +128,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, m1, m2)
 
     def test_scalar_extend_indirect_warns(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             vals = [123]
@@ -142,7 +141,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_scalar_extend_bad_usage_no_error(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             msg.values.extend([123], [456])
@@ -150,14 +149,14 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_list_extend_bad_usage_no_error(self):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             msg = []
             msg.extend([123], [456])
         """)
         self.assert_no_messages(node)
 
     def test_nonscalar_append_bad_usage_no_error(self):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             class NonProtobuf(object):
                 values = []
             msg = NonProtobuf()
@@ -166,7 +165,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_scalar_append_uninferable_no_error(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             msg.values.append(get_external())
@@ -174,7 +173,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_scalar_extend_uninferable_no_error(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             msg.values.extend([get_external()])
@@ -182,7 +181,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_scalar_indirect_extend_uninferable_no_error(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             vals = [get_external()]
@@ -191,7 +190,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_nonscalar_append_uninferable_no_error(self):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             class NonProtobuf(object):
                 values = []
             msg = NonProtobuf()
@@ -202,7 +201,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
     @pytest.mark.xfail(reason='unimplemented, needs design review',
                        raises=AssertionError, match='Expected messages did not match actual')
     def test_indirect_access_no_error(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             v = msg.values
@@ -215,7 +214,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_not_a_repeated_field_no_typeerror(self, repeated_scalar_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
             import {mod}
             msg = {mod}.Repeated()
             msg.other.append(123)
@@ -227,7 +226,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_missing_field_on_repeated_inner_warns(self, repeated_composite_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         import {repeated}
 
         outer = {repeated}.Outer()
@@ -241,7 +240,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_missing_field_on_repeated_warns(self, repeated_external_composite_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         import {repeated}
 
         outer = {repeated}.Outer()
@@ -255,7 +254,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_adds_messages(node, message)
 
     def test_repeated_composite_supports_append(self, repeated_composite_mod):
-        node = astroid.extract_node("""
+        node = self.extract_node("""
         import {repeated}
 
         outer = {repeated}.Outer()
@@ -266,20 +265,22 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         self.assert_no_messages(node)
 
     def test_no_posargs_on_repeated_add(self, repeated_composite_mod):
-        node = self.extract_node("""
+        s = """
             import {mod}
             outer = {mod}.Outer()
             outer.values.add(123)
-        """.format(mod=repeated_composite_mod))
+        """.format(mod=repeated_composite_mod)
+        node = self.extract_node(s)
         msg = self.no_posargs_msg(node)
         self.assert_adds_messages(node, msg)
 
     def test_typeerror_on_repeated_kwargs(self, repeated_composite_mod):
-        node = self.extract_node("""
+        s = """
             import {mod}
             outer = {mod}.Outer()
             outer.values.add(value=123)
-        """.format(mod=repeated_composite_mod))
+        """.format(mod=repeated_composite_mod)
+        node = self.extract_node(s)
         msg = self.type_error_msg(node, 'Inner', 'value', 'str', 123)
         self.assert_adds_messages(node, msg)
 

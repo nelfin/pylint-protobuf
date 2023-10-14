@@ -1,8 +1,7 @@
 import pytest
 
-from tests._testsupport import extract_node, make_message, CheckerTestCase
-
 import pylint_protobuf
+from tests._testsupport import make_message, CheckerTestCase
 
 
 @pytest.fixture
@@ -40,13 +39,13 @@ class TestImportedProtoDefinitions(CheckerTestCase):
     CHECKER_CLASS = pylint_protobuf.ProtobufDescriptorChecker
 
     def test_issue9_imported_message_no_attribute_error(self, parent_mod):
-        node = extract_node("""
+        node = self.extract_node("""
         from {} import Parent
         """.format(parent_mod))
         self.assert_no_messages(node)
 
     def test_issue10_imported_message_warns(self, parent_mod):
-        node = extract_node("""
+        node = self.extract_node("""
         from {} import Parent
         p = Parent()
         p.child.should_warn = 123  #@
@@ -55,7 +54,7 @@ class TestImportedProtoDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_issue18_renamed_from_import_no_assertion_error(self, parent_mod):
-        node = extract_node("""
+        node = self.extract_node("""
         import {0}
         import {0} as foo
         p = {0}.Parent()
@@ -65,7 +64,7 @@ class TestImportedProtoDefinitions(CheckerTestCase):
         self.assert_adds_messages(node, msg)
 
     def test_imports_of_wellknown_types(self, wkt_mod):
-        node = extract_node("""
+        node = self.extract_node("""
             from {} import UsesTimestamp
             msg = UsesTimestamp()
             msg.ts.GetCurrentTime()
