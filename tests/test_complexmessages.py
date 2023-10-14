@@ -106,8 +106,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         outer = Outer()
         outer.inner.value = 'a_string'
         """.format(complexfield_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue12_field_defaults_no_errors(self, complexfield_pb2):
         node = astroid.extract_node("""
@@ -115,8 +114,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         a = Inner()
         b = a.value
         """.format(complexfield_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_inner_class_no_warnings(self, innerclass_pb2):
         node = astroid.extract_node("""
@@ -124,8 +122,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
         p = Person()
         p.primary_alias.name = "Example Fakename"  #@
         """.format(innerclass_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_inner_class_no_assignment(self, innerclass_pb2):
         node = astroid.extract_node("""

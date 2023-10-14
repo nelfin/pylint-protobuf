@@ -70,8 +70,7 @@ class TestWellKnownTypes(CheckerTestCase):
             t = {wkt}()
             t.{field}()
             """.format(module=module, wkt=wkt, field=field))
-            with self.assertNoMessages():
-                self.walk(node.root())
+            self.assert_no_messages(node)
 
     @pytest.mark.parametrize("module,wkt,fields", SAMPLE_WKTS)
     def test_import_wkt_as_module_no_warnings(self, module, wkt, fields, error_on_missing_modules):
@@ -81,8 +80,7 @@ class TestWellKnownTypes(CheckerTestCase):
             t = {module}.{wkt}()
             t.{field}()
             """.format(module=module, wkt=wkt, field=field))
-            with self.assertNoMessages():
-                self.walk(node.root())
+            self.assert_no_messages(node)
 
     @pytest.mark.parametrize("module,wkt,_", SAMPLE_WKTS)
     def test_wkt_should_still_warn(self, module, wkt, _, error_on_missing_modules):

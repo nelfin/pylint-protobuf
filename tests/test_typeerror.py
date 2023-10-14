@@ -41,8 +41,7 @@ class TestSimpleTypeError(CheckerTestCase):
             p = Person()
             p.name = get_user_name()
         """.format(person_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue40_type_constructor_warns(self, person_pb2):
         node = astroid.extract_node("""
@@ -71,8 +70,7 @@ class TestSimpleTypeError(CheckerTestCase):
             from {} import Person
             Person(code=int('1'))
         """.format(person_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue40_int_from_float_warns(self, person_pb2):
         node = astroid.extract_node("""
@@ -90,24 +88,21 @@ class TestSimpleTypeError(CheckerTestCase):
             from {} import Person
             Person(fraction=123.0)
         """.format(person_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue41_float_from_int_no_warn(self, person_pb2):
         node = astroid.extract_node("""
             from {} import Person
             Person(fraction=123)
         """.format(person_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue41_float_from_int_constructor_no_warn(self, person_pb2):
         node = astroid.extract_node("""
             from {} import Person
             p = Person(fraction=int('123'))
         """.format(person_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue42_kwargs_none_should_not_warn(self, person_pb2):
         # It's silly, but true
@@ -115,8 +110,7 @@ class TestSimpleTypeError(CheckerTestCase):
             from {} import Person
             Person(code=None)
         """.format(person_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue42_assignattr_none_should_warn(self, person_pb2):
         node = astroid.extract_node("""

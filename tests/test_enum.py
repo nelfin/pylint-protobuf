@@ -240,8 +240,7 @@ class TestEnumDefinitions(CheckerTestCase):
         enum = OuterClass.InnerEnum.ENUM_1
         outer = OuterClass(enum=enum)
         """.format(innerclass_dict_mod))
-        with self.assertNoMessages():
-            self.walk(outer.root())
+        self.assert_no_messages(outer)
 
     def test_issue31_name_from_value_no_warnings(self, enum_mod):
         self.assert_no_messages(extract_node("""

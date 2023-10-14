@@ -50,8 +50,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {repeated}.Repeated()
             msg.values.append("hello")  # should not raise
         """.format(repeated=repeated_scalar_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_repeated_attrassign(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -111,8 +110,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {mod}.Repeated()
             msg.values.append(123, 456)
         """.format(mod=repeated_scalar_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_scalar_extend_warns_on_each(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -149,16 +147,14 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {mod}.Repeated()
             msg.values.extend([123], [456])
         """.format(mod=repeated_scalar_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_list_extend_bad_usage_no_error(self):
         node = astroid.extract_node("""
             msg = []
             msg.extend([123], [456])
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_nonscalar_append_bad_usage_no_error(self):
         node = astroid.extract_node("""
@@ -167,8 +163,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = NonProtobuf()
             msg.values.append(123, 456)
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_scalar_append_uninferable_no_error(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -176,8 +171,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {mod}.Repeated()
             msg.values.append(get_external())
         """.format(mod=repeated_scalar_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_scalar_extend_uninferable_no_error(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -185,8 +179,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = {mod}.Repeated()
             msg.values.extend([get_external()])
         """.format(mod=repeated_scalar_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_scalar_indirect_extend_uninferable_no_error(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -195,8 +188,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             vals = [get_external()]
             msg.values.extend(vals)
         """.format(mod=repeated_scalar_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_nonscalar_append_uninferable_no_error(self):
         node = astroid.extract_node("""
@@ -205,8 +197,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             msg = NonProtobuf()
             msg.values.append(get_external())
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     @pytest.mark.xfail(reason='unimplemented, needs design review',
                        raises=AssertionError, match='Expected messages did not match actual')
@@ -272,8 +263,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
         inner.value = 'a string'
         outer.values.append(inner)
         """.format(repeated=repeated_composite_mod))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_no_posargs_on_repeated_add(self, repeated_composite_mod):
         node = self.extract_node("""

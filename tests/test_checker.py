@@ -65,15 +65,13 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
         foo = person_pb2.Person()
         foo.id = 123  #@
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_star_import_no_errors(self, person_pb2):
         node = astroid.extract_node("""
         from person_pb2 import *
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_unaliased_module_happy_path_should_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -109,8 +107,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
         foo: Person = person_pb2.Person()
         foo.id = 123  #@
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
@@ -121,8 +118,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
         foo: Person = person_pb2.Person()
         foo.id: int = 123  #@
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
@@ -260,8 +256,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
         foo = Foo()
         foo.no_error = 123  #@
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_aliasing_via_getitem_does_not_throw(self, fake_pb2):
         node = astroid.extract_node("""
@@ -311,8 +306,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
         foo = types[randint(0, 2)]()
         foo.should_warn = 123  #@
         """)
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_aliasing_via_getitem_nested_lists(self, fake_pb2):
         node = astroid.extract_node("""
@@ -488,8 +482,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
         p = Person()
         print(p.{})
         """.format(attr))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_issue13_importing_a_module_from_package(self, innerclass_pb2):
         node = astroid.extract_node("""

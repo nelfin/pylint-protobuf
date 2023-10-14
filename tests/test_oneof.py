@@ -43,8 +43,7 @@ class TestProtobufOneofFields(CheckerTestCase):
             msg = {mod}.ScalarOneof()
             msg.code = 123  # should not raise
         """.format(mod=oneof_scalar_pb2))
-        with self.assertNoMessages():
-            self.walk(node.root())
+        self.assert_no_messages(node)
 
     def test_assignment_to_composite_field(self, oneof_composite_pb2):
         node = astroid.extract_node("""

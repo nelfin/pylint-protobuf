@@ -69,8 +69,7 @@ class TestNestedScopes(CheckerTestCase):
                 inner = Foo()
                 inner.should_not_warn = 123  #@
         """.format(fake_pb2=fake_pb2))
-        with self.assertNoMessages():
-            self.walk(inner.root())
+        self.assert_no_messages(inner)
 
     def test_class_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
         outer = astroid.extract_node("""
@@ -94,8 +93,7 @@ class TestNestedScopes(CheckerTestCase):
             inner = Foo()
             inner.should_not_warn = 123  #@
         """.format(fake_pb2=fake_pb2))
-        with self.assertNoMessages():
-            self.walk(inner.root())
+        self.assert_no_messages(inner)
 
     def test_function_scope_closure_restores_warnings(self, fake_pb2, error_on_missing_modules):
         outer = astroid.extract_node("""
