@@ -91,7 +91,7 @@ class TestWellKnownTypes(pylint.testutils.CheckerTestCase):
             t = {wkt}()
             t.should_warn = 123
         """.format(module=module, wkt=wkt))
-        msg = make_message(node.targets[0], wkt, 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node.targets[0], wkt, 'should_warn')
         with self.assertAddsMessages(msg):
             self.walk(node.root())
 

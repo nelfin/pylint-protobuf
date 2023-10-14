@@ -6,7 +6,7 @@ def extract_node(source):
     return astroid.extract_node(source)
 
 
-def make_message(node, target, attr, message='protobuf-undefined-attribute'):
+def make_message(message, node, target, attr):
     return pylint.testutils.MessageTest(message, node=node, args=(attr, target))
 
 

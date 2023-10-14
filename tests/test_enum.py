@@ -96,7 +96,7 @@ class TestEnumDefinitions(CheckerTestCase):
                 Variable.should_warn  #@
             )
         """.format(enum_mod))
-        msg = make_message(node, 'Variable', 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node, 'Variable', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_import_enum_by_value_no_errors(self, enum_mod):
@@ -116,7 +116,7 @@ class TestEnumDefinitions(CheckerTestCase):
             from {} import *
             Variable.should_warn  #@
         """.format(enum_mod))
-        msg = make_message(node, 'Variable', 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node, 'Variable', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_import_enum_missing_attribute_by_value_warns(self, enum_mod):
@@ -206,7 +206,7 @@ class TestEnumDefinitions(CheckerTestCase):
             import {mod}
             {mod}.Message.should_warn
         """.format(mod=package_nested_enum_mod))
-        msg = make_message(node, 'Message', 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node, 'Message', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue16_nested_enum_definition_warns(self, nested_enum_mod):
@@ -214,7 +214,7 @@ class TestEnumDefinitions(CheckerTestCase):
             import {} as sut
             sut.Message.should_warn
         """.format(nested_enum_mod))
-        msg = make_message(node, 'Message', 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node, 'Message', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     @pytest.mark.skipif(sys.version_info < (3, 0),
@@ -231,7 +231,7 @@ class TestEnumDefinitions(CheckerTestCase):
             import {} as sut
             sut.Message.Inner.NOPE = 123
         """.format(nested_enum_mod))
-        msg = make_message(node.targets[0], 'Inner', 'NOPE')
+        msg = make_message('protobuf-undefined-attribute', node.targets[0], 'Inner', 'NOPE')
         self.assert_adds_messages(node, msg)
 
     def test_nested_enum_dict(self, innerclass_dict_mod):
@@ -296,7 +296,7 @@ class TestEnumDefinitions(CheckerTestCase):
             from {} import Variable
             Variable.ParseFromString("blah")
         """.format(enum_mod))
-        msg = make_message(node.func, 'Variable', 'ParseFromString')
+        msg = make_message('protobuf-undefined-attribute', node.func, 'Variable', 'ParseFromString')
         self.assert_adds_messages(node, msg)
 
     def test_messages_do_not_have_enum_fields(self, nested_enum_mod):
@@ -304,7 +304,7 @@ class TestEnumDefinitions(CheckerTestCase):
             from {} import Message
             Message.Value("ONE")
         """.format(nested_enum_mod))
-        msg = make_message(node.func, 'Message', 'Value')
+        msg = make_message('protobuf-undefined-attribute', node.func, 'Message', 'Value')
         self.assert_adds_messages(node, msg)
 
 

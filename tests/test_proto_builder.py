@@ -38,6 +38,6 @@ class TestAutoBuilder(pylint.testutils.CheckerTestCase):
         foo = mod.Foo()
         foo.should_warn
         """.format(foo_mod))
-        message = make_message(node, 'Foo', 'should_warn')
+        message = make_message('protobuf-undefined-attribute', node, 'Foo', 'should_warn')
         with self.assertAddsMessages(message):
             self.walk(node.root())

@@ -51,7 +51,7 @@ class TestImportedProtoDefinitions(CheckerTestCase):
         p = Parent()
         p.child.should_warn = 123  #@
         """.format(parent_mod))
-        msg = make_message(node.targets[0], 'Child', 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node.targets[0], 'Child', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_issue18_renamed_from_import_no_assertion_error(self, parent_mod):
@@ -61,7 +61,7 @@ class TestImportedProtoDefinitions(CheckerTestCase):
         p = {0}.Parent()
         p.should_warn = 123
         """.format(parent_mod))
-        msg = make_message(node.targets[0], 'Parent', 'should_warn')
+        msg = make_message('protobuf-undefined-attribute', node.targets[0], 'Parent', 'should_warn')
         self.assert_adds_messages(node, msg)
 
     def test_imports_of_wellknown_types(self, wkt_mod):
