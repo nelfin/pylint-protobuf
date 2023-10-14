@@ -56,8 +56,7 @@ class TestProtobufOneofFields(CheckerTestCase):
             'protobuf-no-assignment',
             node=node.targets[0], args=('CompositeOneof', 'name')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_scalar_assignment_to_composite_field(self, oneof_composite_pb2):
         node = astroid.extract_node("""
@@ -69,8 +68,7 @@ class TestProtobufOneofFields(CheckerTestCase):
             'protobuf-no-assignment',
             node=node.targets[0], args=('CompositeOneof', 'name')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_composite_field_warnings(self, oneof_composite_pb2):
         node = astroid.extract_node("""
@@ -84,8 +82,7 @@ class TestProtobufOneofFields(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Name')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
 
 @pytest.fixture

@@ -38,5 +38,4 @@ class TestAutoBuilder(CheckerTestCase):
         foo.should_warn
         """.format(foo_mod))
         message = make_message('protobuf-undefined-attribute', node, 'Foo', 'should_warn')
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)

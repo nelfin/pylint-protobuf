@@ -64,8 +64,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-no-assignment',
             node=node.targets[0], args=('Repeated', 'values')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_repeated_attrassign_no_typeerror(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -78,8 +77,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-no-assignment',
             node=node.targets[0], args=('Repeated', 'values')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_repeated_scalar_assign_no_typeerror(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -92,8 +90,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-no-assignment',
             node=node.targets[0], args=('Repeated', 'values')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_scalar_typeerror(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -106,8 +103,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_scalar_append_bad_usage_no_error(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -132,8 +128,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 456)
         )
-        with self.assertAddsMessages(m1, m2):
-            self.walk(node.root())
+        self.assert_adds_messages(node, m1, m2)
 
     def test_scalar_extend_indirect_warns(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -146,8 +141,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
-        with self.assertAddsMessages(msg):
-            self.walk(node.root())
+        self.assert_adds_messages(node, msg)
 
     def test_scalar_extend_bad_usage_no_error(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -227,8 +221,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Repeated', 'values', 'str', 123)
         )
-        with self.assertAddsMessages(msg):
-            self.walk(node.root())
+        self.assert_adds_messages(node, msg)
 
     def test_not_a_repeated_field_no_typeerror(self, repeated_scalar_mod):
         node = astroid.extract_node("""
@@ -240,8 +233,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.func.expr, args=('other', 'Repeated')
         )
-        with self.assertAddsMessages(msg):
-            self.walk(node.root())
+        self.assert_adds_messages(node, msg)
 
     def test_missing_field_on_repeated_inner_warns(self, repeated_composite_mod):
         node = astroid.extract_node("""
@@ -255,8 +247,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Inner')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_missing_field_on_repeated_warns(self, repeated_external_composite_mod):
         node = astroid.extract_node("""
@@ -270,8 +261,7 @@ class TestProtobufRepeatedFields(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Inner')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_repeated_composite_supports_append(self, repeated_composite_mod):
         node = astroid.extract_node("""

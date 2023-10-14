@@ -92,8 +92,7 @@ class TestWellKnownTypes(CheckerTestCase):
             t.should_warn = 123
         """.format(module=module, wkt=wkt))
         msg = make_message('protobuf-undefined-attribute', node.targets[0], wkt, 'should_warn')
-        with self.assertAddsMessages(msg):
-            self.walk(node.root())
+        self.assert_adds_messages(node, msg)
 
     @pytest.mark.parametrize("module,wkt,_", SAMPLE_WKTS)
     def test_wkt_kwargs_should_still_warn(self, module, wkt, _, error_on_missing_modules):
@@ -102,8 +101,7 @@ class TestWellKnownTypes(CheckerTestCase):
             {wkt}(should_warn=123)
         """.format(module=module, wkt=wkt))
         msg = pylint.testutils.MessageTest('unexpected-keyword-arg', node=node, args=('should_warn', 'constructor'))
-        with self.assertAddsMessages(msg):
-            self.walk(node.root())
+        self.assert_adds_messages(node, msg)
 
 
 @pytest.fixture

@@ -44,8 +44,7 @@ class TestNestedScopes(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_many_imports_with_aliasing(self, first_alias, second_alias):
         node = astroid.extract_node("""
@@ -58,8 +57,7 @@ class TestNestedScopes(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     @pytest.mark.xfail(reason='actually this was an incorrect assumption, Foo is in the global scope')
     def test_aliasing_by_inner_class_does_not_warn(self, fake_pb2, error_on_missing_modules):
@@ -86,8 +84,7 @@ class TestNestedScopes(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=outer.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(outer.root())
+        self.assert_adds_messages(outer, message)
 
     def test_alias_by_function_scope_does_not_warn(self, fake_pb2, error_on_missing_modules):
         inner = astroid.extract_node("""
@@ -112,5 +109,4 @@ class TestNestedScopes(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=outer.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(outer.root())
+        self.assert_adds_messages(outer, message)

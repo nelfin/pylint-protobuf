@@ -98,8 +98,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             node=node.targets[0],
             args=('should_warn', 'Inner')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_complex_field_no_warnings(self, complexfield_pb2):
         node = astroid.extract_node("""
@@ -138,8 +137,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             'protobuf-no-assignment',
             node=node.targets[0], args=('Person', 'primary_alias')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_inner_class_warns(self, innerclass_pb2):
         node = astroid.extract_node("""
@@ -152,8 +150,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             node=node.targets[0],
             args=('should_warn', 'Alias')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_mutually_recursive_warns(self, mutual_pb2):
         node = astroid.extract_node("""
@@ -166,8 +163,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             node=node.targets[0],
             args=('should_warn', 'A')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_external_nested_class_warns(self, extern_pb2):
         node = astroid.extract_node("""
@@ -180,8 +176,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             node=node.targets[0],
             args=('should_warn', 'Identifier')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_double_nested_class_warns(self, double_pb2):
         node = astroid.extract_node("""
@@ -195,8 +190,7 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             node=node.targets[0],
             args=('should_warn', 'Innermost')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_no_toplevel_package_no_error(self, no_package_pb2):
         node = astroid.extract_node("""
@@ -210,5 +204,4 @@ class TestComplexMessageDefinitions(CheckerTestCase):
             node=node.targets[0],
             args=('should_warn', 'Inner')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)

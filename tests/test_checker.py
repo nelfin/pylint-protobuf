@@ -86,8 +86,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node, args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_star_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -99,8 +98,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node, args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
@@ -139,8 +137,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.target, args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_unaliased_module_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -153,8 +150,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
@@ -169,8 +165,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason='AnnAssign requires Python 3.6+')
@@ -185,8 +180,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.target, args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_module_import_should_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -199,8 +193,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_module_import_as_self_should_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -213,8 +206,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('invalid_field', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_importfrom_should_warn(self, fake_pb2):
         node = astroid.extract_node("""
@@ -227,8 +219,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_importfrom_with_aliasing_should_warn(self, fake_pb2):
         node = astroid.extract_node("""
@@ -244,8 +235,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_importfrom_with_multiple_aliasing(self, fake_pb2):
         node = astroid.extract_node("""
@@ -258,8 +248,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_importfrom_with_aliasing_no_warning(self, fake_pb2):
         node = astroid.extract_node("""
@@ -294,8 +283,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_getitem_dict(self, fake_pb2):
         node = astroid.extract_node("""
@@ -312,8 +300,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_getitem_uninferable_should_not_warn(self, fake_pb2):
         node = astroid.extract_node("""
@@ -339,8 +326,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_indirection_class_renaming(self, fake_pb2):
         node = astroid.extract_node("""
@@ -354,8 +340,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_instance_renaming(self, fake_pb2):
         node = astroid.extract_node("""
@@ -369,8 +354,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_multiple_assignment(self, fake_pb2):
         node = astroid.extract_node("""
@@ -383,8 +367,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_bad_fields_in_multiple_assignment_multiple_messages(self, fake_pb2):
         node = astroid.extract_node("""
@@ -404,8 +387,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
                 node=node.targets[1], args=('should_also_warn', 'Foo')
             ),
         ]
-        with self.assertAddsMessages(*messages):
-            self.walk(node.root())
+        self.assert_adds_messages(node, *messages)
 
     @pytest.mark.xfail(reason='wontfix')
     def test_aliasing_via_indirection_getitem(self, fake_pb2):
@@ -422,8 +404,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_getitem_list_indirection(self, fake_pb2):
         node = astroid.extract_node("""
@@ -438,8 +419,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_aliasing_via_tuple_unpacking(self, fake_pb2):
         node = astroid.extract_node("""
@@ -452,8 +432,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Foo')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_issue5_inferenceerror_should_not_propagate(self):
         node = astroid.extract_node("""
@@ -522,8 +501,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_issue13_importing_a_module_with_alias_from_package(self, innerclass_pb2):
         node = astroid.extract_node("""
@@ -535,8 +513,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_issue13_importing_many_modules_from_package_no_errors(self, pb2_package):
         node = astroid.extract_node("""
@@ -554,8 +531,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_module_import_renaming_still_warns(self, person_pb2):
         node = astroid.extract_node("""
@@ -568,8 +544,7 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-undefined-attribute',
             node=node.targets[0], args=('should_warn', 'Person')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_typeerror_on_attrassign(self, person_pb2):
         node = astroid.extract_node("""
@@ -581,5 +556,4 @@ class TestProtobufDescriptorChecker(CheckerTestCase):
             'protobuf-type-error',
             node=node.targets[0], args=('Person', 'name', 'str', 123)
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)

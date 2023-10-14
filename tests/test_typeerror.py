@@ -33,8 +33,7 @@ class TestSimpleTypeError(CheckerTestCase):
             'protobuf-type-error',
             node=node.targets[0], args=('Person', 'name', 'str', 123)
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_uninferable_assignattr_no_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -54,8 +53,7 @@ class TestSimpleTypeError(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Person', 'code', 'int', 'int()')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_issue40_float_constructor_warns(self, person_pb2):
         node = astroid.extract_node("""
@@ -66,8 +64,7 @@ class TestSimpleTypeError(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Person', 'fraction', 'float', 'float()')
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_issue40_int_constructor_no_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -86,8 +83,7 @@ class TestSimpleTypeError(CheckerTestCase):
             'protobuf-type-error',
             node=node, args=('Person', 'code', 'int', 123.0)
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
     def test_issue41_float_from_float_no_warn(self, person_pb2):
         node = astroid.extract_node("""
@@ -132,8 +128,7 @@ class TestSimpleTypeError(CheckerTestCase):
             'protobuf-type-error',
             node=node.targets[0], args=('Person', 'code', 'int', None)
         )
-        with self.assertAddsMessages(message):
-            self.walk(node.root())
+        self.assert_adds_messages(node, message)
 
 
 @pytest.fixture
