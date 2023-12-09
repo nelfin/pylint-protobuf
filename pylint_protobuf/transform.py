@@ -496,6 +496,7 @@ def _template_message(desc, descriptor_registry):
         'class {name}(object):\n'
         '    {docstring!r}\n'
         '    __slots__ = {slots}\n'
+        '    def __getattr__(self, key): ...\n'
         '{helpers}{body}{init}\n'
     ).format(
         name=desc.name,
