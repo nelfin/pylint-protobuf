@@ -3,6 +3,7 @@ from typing import Union, Optional, List, Any
 
 import astroid
 from pylint.checkers import BaseChecker, utils
+from pylint.exceptions import UnknownMessageError
 
 from .transform import transform_module, is_some_protobuf_module, to_pytype, is_composite, is_repeated, is_oneof
 from .transform import SimpleDescriptor, PROTOBUF_IMPLICIT_ATTRS, PROTOBUF_ENUM_IMPLICIT_ATTRS
@@ -521,6 +522,8 @@ class ProtobufDescriptorChecker(BaseChecker):
     def _disable(self, msgid, line, scope='module'):
         try:
             self.linter.disable(msgid, scope=scope, line=line)
+        except UnknownMessageError:
+            pass  # change in UnittestLinter behaviour
         except AttributeError:
             pass  # might be UnittestLinter
 
