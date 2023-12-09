@@ -11,9 +11,13 @@ class CheckerTestCase(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.walk(node.root())
 
-    def assert_adds_messages(self, node, *msg):
-        with self.assertAddsMessages(*msg):
-            self.walk(node.root())
+    def assert_adds_messages(self, node, *msg, ignore_position=True):
+        try:
+            with self.assertAddsMessages(*msg, ignore_position=ignore_position):
+                self.walk(node.root())
+        except TypeError:  # pre ignore_position
+            with self.assertAddsMessages(*msg):
+                self.walk(node.root())
 
     @staticmethod
     def extract_node(source):
