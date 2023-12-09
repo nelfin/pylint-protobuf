@@ -5,9 +5,11 @@
 .eggs/
 __pycache__/
 .pytest_cache/
-build
-dist
 .coverage
 htmlcov/
 .hypothesis/
 .mypy_cache/
+
+/build/
+/dist/
+/venv*
