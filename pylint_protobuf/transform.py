@@ -317,6 +317,21 @@ def _template_enum(desc, descriptor_registry):
     )
 
 
+def _get_descriptor_id(cls_def):
+    try:
+        docstring = cls_def.doc
+    except AttributeError:
+        doc_node = cls_def.doc_node
+        if doc_node is None:
+            return None
+        docstring = cls_def.doc_node.value
+    try:
+        return docstring.split("=")[-1]
+    except AttributeError:
+        # docstring could be None
+        return None
+
+
 def transform_enum(desc, descriptor_registry):
     # type: (EnumDescriptor, DescriptorRegistry) -> List[Tuple[str, Union[astroid.ClassDef, astroid.Assign]]]
 
@@ -324,8 +339,8 @@ def transform_enum(desc, descriptor_registry):
     # recurse like with transform_message
     cls_def = astroid.extract_node(_template_enum(desc, descriptor_registry))  # type: astroid.ClassDef
 
+    simple_desc = descriptor_registry[_get_descriptor_id(cls_def)]  # FIXME: guard?
     cls_def._is_protobuf_class = True
-    simple_desc = descriptor_registry[cls_def.doc.split('=')[-1]]  # FIXME: guard?
     cls_def._protobuf_descriptor = simple_desc
 
     names = []  # type: List[Tuple[str, astroid.Assign]]
@@ -501,9 +516,9 @@ def transform_message(desc, desc_registry):
     def visit_classdef(cls_def):
         # type: (astroid.ClassDef) -> astroid.ClassDef
         try:
-            simple_desc = desc_registry[cls_def.doc.split('=')[-1]]
-        except (AttributeError, KeyError):
-            pass # probably a helper class like CompositeContainer
+            simple_desc = desc_registry[_get_descriptor_id(cls_def)]
+        except KeyError:
+            pass  # probably a helper class like CompositeContainer
         else:
             cls_def._is_protobuf_class = True
             cls_def._protobuf_descriptor = simple_desc
