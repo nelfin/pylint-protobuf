@@ -44,8 +44,46 @@ EXPECTED_MSGS = [
 def test_no_E1101_on_protobuf_classes(e1101_mod, linter_factory):
     linter = linter_factory(
         register=pylint_protobuf.register,
-        disable=['all'], enable=['protobuf-undefined-attribute', 'no-member'],
+        disable=['all'], enable=['protobuf-descriptor-checker', 'no-member'],
     )
     linter.check([e1101_mod])
     actual_msgs = [message.msg for message in linter.reporter.messages]
     assert sorted(actual_msgs) == sorted(EXPECTED_MSGS)
+
+
+@pytest.fixture
+def variable_pb2(proto_builder):
+    preamble = """\
+        syntax = "proto3";
+        package variable;
+    """
+    return proto_builder("""\
+        enum Variable {
+          CONTINUOUS = 0;
+          DISCRETE = 1;
+        }
+    """, 'variable', preamble=preamble)
+
+
+@pytest.fixture
+def e1101_enum(module_builder, variable_pb2):
+    return module_builder("""\
+        from variable_pb2 import Variable
+
+        Variable.Name(123)  # no E1101, raise E5902
+        Variable.Value('missing')  # no E1101, raise E5902
+    """, 'e1101_enum')
+
+
+def test_no_E1101_on_protobuf_enums(e1101_enum, linter_factory):
+    linter = linter_factory(
+        register=pylint_protobuf.register,
+        disable=['all'], enable=['protobuf-descriptor-checker', 'no-member'],
+    )
+    linter.check([e1101_enum])
+    actual_msgs = [message.msg for message in linter.reporter.messages]
+    expected_msgs = [
+        pylint_protobuf.MESSAGES['E5902'][0] % (123, 'Variable'),
+        pylint_protobuf.MESSAGES['E5902'][0] % ("missing", 'Variable'),
+    ]
+    assert sorted(actual_msgs) == sorted(expected_msgs)
