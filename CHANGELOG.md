@@ -1,5 +1,17 @@
 # pylint-protobuf
 
+## [0.22.0] - 2023-12-10
+
+- Fix for removal of ScopedNode.doc in astroid 3.x (#58). Thanks @matejsp
+  for the report.
+- Update astroid transform to mark shim class definitions as having a
+  dynamic ``__getattr__`` method, this should better address all future
+  spurious "no-member" messages. Please submit a report if you find that
+  this is not the case.
+- The minimum supported astroid version is now 2.9, a future update may
+  increase to 2.15.x (the last release in the 2.x series), then eventually
+  3.x
+
 ## [0.21.0] - 2023-10-06
 
 - Fix for removal of IAstroidChecker in pylint 3.x (#57). Thanks @matejsp,

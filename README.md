@@ -38,7 +38,7 @@ Add or update `pylintrc` to load `pylint-protobuf`:
 
 ## Supported Python Versions
 
-`pylint-protobuf` supports Python 3.5 at a minimum.
+`pylint-protobuf` supports Python 3.8 at a minimum.
 
 ## Known Issues
 
