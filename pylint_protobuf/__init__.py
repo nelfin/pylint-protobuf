@@ -447,7 +447,6 @@ class ProtobufDescriptorChecker(BaseChecker):
         for desc in descriptors:
             if node.attrname in desc.field_names or node.attrname in desc.extensions_by_name:
                 found = desc
-                self._disable('no-member', node.lineno)  # Should always be checked by us instead
                 break
             missing.append(desc)
         else:
@@ -455,8 +454,6 @@ class ProtobufDescriptorChecker(BaseChecker):
                 return  # don't attempt to warn on multiple options
             desc = missing[0]
             self.add_message('protobuf-undefined-attribute', args=(node.attrname, desc.name), node=node)
-            self._disable('no-member', node.lineno)  # Should always be checked by us instead
-            self._disable('assigning-non-slot', node.lineno)
         if found is not None:
             self._check_type_error(node, found)
             self._check_no_assign(node, found)
@@ -519,16 +516,9 @@ class ProtobufDescriptorChecker(BaseChecker):
         if not target_desc.is_extended_by(fd):
             self.add_message('protobuf-wrong-extension-scope', node=node, args=(ext_name, target_desc.name))
 
-    def _disable(self, msgid, line, scope='module'):
-        try:
-            self.linter.disable(msgid, scope=scope, line=line)
-        except UnknownMessageError:
-            pass  # change in UnittestLinter behaviour
-        except AttributeError:
-            pass  # might be UnittestLinter
-
 
 def register(linter):
     linter.register_checker(ProtobufDescriptorChecker(linter))
+
 
 astroid.MANAGER.register_transform(astroid.Module, transform_module, is_some_protobuf_module)
