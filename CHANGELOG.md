@@ -1,5 +1,10 @@
 # pylint-protobuf
 
+## [0.22.1] - 2026-08-25
+
+- Fix inclusion of toplevel 'tests' package in the dist.
+  Thanks @copdips for the report.
+
 ## [0.22.0] - 2023-12-10
 
 - Fix for removal of ScopedNode.doc in astroid 3.x (#58). Thanks @matejsp

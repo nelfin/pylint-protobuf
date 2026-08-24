@@ -1,7 +1,7 @@
 import os.path
 from setuptools import setup, find_packages
 
-__version__ = '0.22.0'
+__version__ = '0.22.1'
 
 description = (
     'A plugin for making Pylint aware of the fields of protobuf-generated '
@@ -30,7 +30,8 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Quality Assurance',
     ],
-    packages=find_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=[
         'astroid',
         'pylint',
